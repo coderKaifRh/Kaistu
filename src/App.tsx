@@ -7,11 +7,13 @@ import { Workstation } from './components/layout/Workstation';
 import { SubjectModal } from './components/subjects/SubjectModal';
 import { AddItemModal } from './components/subjects/AddItemModal';
 import { AiHubModal } from './components/ai/AiHubModal';
+import { CoursesHeroView } from './components/home/CoursesHeroView';
 import { Loader2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'home' | 'subject'>('home');
   const [folders, setFolders] = useState<StudyFolder[]>([]);
   const [items, setItems] = useState<StudyItem[]>([]);
   const [activeItem, setActiveItem] = useState<StudyItem | null>(null);
@@ -50,12 +52,16 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadData();
     const handlePopState = () => {
-      // Return to dashboard instead of exiting to browser
-      setActiveItem(null);
+      // Return to workstation/dashboard
+      if (activeItem) {
+        setActiveItem(null);
+      } else {
+        setActiveView('home');
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [activeItem]);
 
   const openItemInWorkstation = (item: StudyItem) => {
     setActiveItem(item);
@@ -74,6 +80,7 @@ export const App: React.FC = () => {
     const updatedSubs = await StorageService.getSubjects();
     setSubjects(updatedSubs);
     setSelectedSubjectId(subject.id);
+    setActiveView('subject');
   };
 
   const handleDeleteSubject = async (id: string) => {
@@ -192,6 +199,23 @@ export const App: React.FC = () => {
           }}
           onDeleteItem={handleDeleteItem}
         />
+      ) : activeView === 'home' ? (
+        <CoursesHeroView
+          subjects={subjects}
+          items={items}
+          folders={folders}
+          onSelectSubject={(id) => {
+            setSelectedSubjectId(id);
+            setActiveView('subject');
+          }}
+          onOpenItem={(item) => openItemInWorkstation(item)}
+          onAddSubject={() => setIsSubjectModalOpen(true)}
+          onDeleteSubject={(id) => handleDeleteSubject(id)}
+          onOpenAiHub={() => {
+            setAiInitialPrompt(undefined);
+            setIsAiHubOpen(true);
+          }}
+        />
       ) : (
         /* Standard Dashboard Layout with Sidebar & Subject Details */
         <div className="flex w-full h-full relative overflow-hidden">
@@ -214,6 +238,7 @@ export const App: React.FC = () => {
               selectedSubjectId={selectedSubjectId}
               onSelectSubject={(id) => {
                 setSelectedSubjectId(id);
+                setActiveView('subject');
                 closeWorkstation();
                 setIsMobileSidebarOpen(false);
               }}
@@ -227,6 +252,10 @@ export const App: React.FC = () => {
               onExportData={handleExportData}
               itemCountsBySubject={itemCountsBySubject}
               onCloseMobile={() => setIsMobileSidebarOpen(false)}
+              onBackToCourses={() => {
+                setActiveView('home');
+                setIsMobileSidebarOpen(false);
+              }}
             />
           </div>
 
@@ -236,7 +265,7 @@ export const App: React.FC = () => {
                 subject={activeSubject}
                 items={subjectItems}
                 folders={folders}
-                onBack={() => {}}
+                onBack={() => setActiveView('home')}
                 onSelectItem={(item) => openItemInWorkstation(item)}
                 onAddNewMaterial={(folderId) => {
                   setActiveTargetFolderId(folderId || null);
@@ -260,12 +289,20 @@ export const App: React.FC = () => {
                 <p className="text-sm max-w-sm mb-4">
                   Create your first subject to organize all your PDFs, YouTube lectures, Word docs, and notes in one place.
                 </p>
-                <button
-                  onClick={() => setIsSubjectModalOpen(true)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg transition"
-                >
-                  Create Your First Subject
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveView('home')}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold shadow-lg transition"
+                  >
+                    View Our Courses
+                  </button>
+                  <button
+                    onClick={() => setIsSubjectModalOpen(true)}
+                    className="px-4 py-2 bg-white/[0.08] hover:bg-white/[0.12] text-white border border-white/10 rounded-xl text-xs font-semibold transition"
+                  >
+                    Create New Subject
+                  </button>
+                </div>
               </div>
             )}
           </main>

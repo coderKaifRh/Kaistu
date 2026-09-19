@@ -40,7 +40,7 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
   subject,
   items,
   folders,
-  onBack: _onBack,
+  onBack,
   onSelectItem,
   onAddNewMaterial,
   onDeleteItem,
@@ -61,12 +61,19 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
   // Current folder object
   const currentFolder = currentFolderId ? folders.find((f) => f.id === currentFolderId) : null;
 
-  // Build breadcrumb path
+  // Build breadcrumb path with Our Courses at the root
   const breadcrumbs = React.useMemo(() => {
-    const crumbs: { id: string | null; name: string }[] = [{ id: null, name: subject.name }];
+    interface Crumb {
+      id: string | null;
+      name: string;
+    }
+    const crumbs: Crumb[] = [
+      { id: '__home__', name: 'Our Courses' },
+      { id: null, name: subject.name },
+    ];
     if (!currentFolderId) return crumbs;
 
-    const path: { id: string; name: string }[] = [];
+    const path: Crumb[] = [];
     let curId: string | null | undefined = currentFolderId;
     while (curId) {
       const curFolder = folders.find((f) => f.id === curId);
@@ -77,11 +84,14 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
     return [...crumbs, ...path];
   }, [currentFolderId, folders, subject.name]);
 
-  // Navigate up one folder level
+  // Navigate up one folder level or back to all courses
   const handleGoBack = () => {
-    if (!currentFolderId) return;
-    const cur = folders.find((f) => f.id === currentFolderId);
-    setCurrentFolderId(cur?.parentId || null);
+    if (currentFolderId) {
+      const cur = folders.find((f) => f.id === currentFolderId);
+      setCurrentFolderId(cur?.parentId || null);
+    } else {
+      onBack();
+    }
   };
 
   // Subfolders in this view
@@ -192,20 +202,18 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
             </button>
           )}
 
-          {currentFolderId && (
-            <button
-              onClick={handleGoBack}
-              className="p-2.5 rounded-xl bg-[#0e121a] border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.08] transition shadow-sm flex items-center justify-center shrink-0"
-              title="Back to parent folder"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={handleGoBack}
+            className="p-2.5 rounded-xl bg-[#0e121a] border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.08] transition shadow-sm flex items-center justify-center shrink-0"
+            title={currentFolderId ? 'Back to parent folder' : 'Back to All Courses'}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
 
           <div>
             {/* Breadcrumbs trail */}
             <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 mb-1">
-              <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-purple-400 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-md">
                 {subject.code || 'COURSE'}
               </span>
               <span className="text-slate-600">•</span>
@@ -215,8 +223,14 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
                   <React.Fragment key={crumb.id || 'root'}>
                     {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />}
                     <button
-                      onClick={() => setCurrentFolderId(crumb.id)}
-                      className={`hover:text-indigo-300 transition-colors font-medium truncate max-w-[140px] sm:max-w-[200px] ${
+                      onClick={() => {
+                        if (crumb.id === '__home__') {
+                          onBack();
+                        } else {
+                          setCurrentFolderId(crumb.id);
+                        }
+                      }}
+                      className={`hover:text-purple-300 transition-colors font-medium truncate max-w-[140px] sm:max-w-[200px] ${
                         isLast ? 'text-white font-semibold' : 'text-slate-400'
                       }`}
                     >

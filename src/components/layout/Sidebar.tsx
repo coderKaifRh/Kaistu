@@ -15,6 +15,7 @@ import {
   Globe2,
   Upload,
   X,
+  LayoutGrid,
 } from 'lucide-react';
 import { PomodoroBar } from '../pomodoro/PomodoroBar';
 import { ExamCountdownWidget } from '../exam/ExamCountdownWidget';
@@ -30,6 +31,7 @@ interface SidebarProps {
   onExportData: () => void;
   itemCountsBySubject: Record<string, number>;
   onCloseMobile?: () => void;
+  onBackToCourses?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -42,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onExportData,
   itemCountsBySubject,
   onCloseMobile,
+  onBackToCourses,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -130,6 +133,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </span>
         </button>
       </div>
+
+      {/* Navigation: Our Courses Hero */}
+      {onBackToCourses && (
+        <div className="px-3 pt-2 pb-1">
+          <button
+            onClick={onBackToCourses}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              !selectedSubjectId
+                ? 'bg-purple-600/25 text-purple-200 border border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                : 'text-slate-300 hover:text-white hover:bg-white/[0.06] border border-white/[0.05]'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="w-4 h-4 text-purple-400" />
+              <span>Our Courses</span>
+            </div>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              Overview
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Subjects Section */}
       <div className="flex-1 overflow-y-auto p-3 space-y-1">

@@ -88,3 +88,37 @@
   background: rgba(148, 163, 184, 0.45);
 }
 
+/* Programming Hero Isometric Wireframe Grid Pattern */
+.hero-iso-grid {
+  background-image: 
+    linear-gradient(60deg, rgba(168, 85, 247, 0.08) 1px, transparent 1px),
+    linear-gradient(-60deg, rgba(168, 85, 247, 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(168, 85, 247, 0.04) 1px, transparent 1px);
+  background-size: 80px 138px;
+}
+
+/* Floating 3D Prism Animation */
+@keyframes float-prism {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-12px) rotate(4deg) scale(1.03);
+  }
+}
+
+.animate-float-prism {
+  animation: float-prism 6s ease-in-out infinite;
+}
+
+/* Neon glow pulsers */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.08); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+

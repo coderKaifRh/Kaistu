@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Subject, StudyItem } from './types';
+import type { Subject, StudyFolder, StudyItem } from './types';
 import { StorageService } from './services/storage';
 import { Sidebar } from './components/layout/Sidebar';
 import { SubjectDetailView } from './components/subjects/SubjectDetailView';
@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 export const App: React.FC = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  const [folders, setFolders] = useState<StudyFolder[]>([]);
   const [items, setItems] = useState<StudyItem[]>([]);
   const [activeItem, setActiveItem] = useState<StudyItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,6 +20,7 @@ export const App: React.FC = () => {
   // Modals
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [activeTargetFolderId, setActiveTargetFolderId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<StudyItem | null>(null);
   const [isAiHubOpen, setIsAiHubOpen] = useState(false);
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
@@ -30,6 +32,8 @@ export const App: React.FC = () => {
       setIsLoading(true);
       const subs = await StorageService.getSubjects();
       setSubjects(subs);
+      const allFolders = await StorageService.getFolders();
+      setFolders(allFolders);
       const allItems = await StorageService.getAllItems();
       setItems(allItems);
 
@@ -76,6 +80,8 @@ export const App: React.FC = () => {
     await StorageService.deleteSubject(id);
     const updatedSubs = await StorageService.getSubjects();
     setSubjects(updatedSubs);
+    const updatedFolders = await StorageService.getFolders();
+    setFolders(updatedFolders);
     const updatedItems = await StorageService.getAllItems();
     setItems(updatedItems);
 
@@ -83,6 +89,20 @@ export const App: React.FC = () => {
       setSelectedSubjectId(updatedSubs.length > 0 ? updatedSubs[0].id : null);
       closeWorkstation();
     }
+  };
+
+  const handleSaveFolder = async (folder: StudyFolder) => {
+    await StorageService.saveFolder(folder);
+    const updatedFolders = await StorageService.getFolders();
+    setFolders(updatedFolders);
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    await StorageService.deleteFolder(folderId);
+    const updatedFolders = await StorageService.getFolders();
+    setFolders(updatedFolders);
+    const updatedItems = await StorageService.getAllItems();
+    setItems(updatedItems);
   };
 
   const handleUpdateItem = async (updated: StudyItem) => {
@@ -109,6 +129,7 @@ export const App: React.FC = () => {
       openItemInWorkstation(savedItem);
     }
     setEditingItem(null);
+    setActiveTargetFolderId(null);
   };
 
   const handleOpenAiAssist = (contextPrompt: string) => {
@@ -135,8 +156,8 @@ export const App: React.FC = () => {
     return acc;
   }, {} as Record<string, number>);
 
-  const activeSubject = subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
-  const subjectItems = items.filter((i) => i.subjectId === selectedSubjectId);
+  const activeSubject = subjects.find((s) => s.id === selectedSubjectId) || (subjects.length > 0 ? subjects[0] : null);
+  const subjectItems = selectedSubjectId ? items.filter((i) => i.subjectId === selectedSubjectId) : [];
 
   if (isLoading) {
     return (
@@ -214,17 +235,22 @@ export const App: React.FC = () => {
               <SubjectDetailView
                 subject={activeSubject}
                 items={subjectItems}
+                folders={folders}
                 onBack={() => {}}
                 onSelectItem={(item) => openItemInWorkstation(item)}
-                onAddNewMaterial={() => {
+                onAddNewMaterial={(folderId) => {
+                  setActiveTargetFolderId(folderId || null);
                   setEditingItem(null);
                   setIsAddItemModalOpen(true);
                 }}
                 onDeleteItem={handleDeleteItem}
                 onEditItem={(it) => {
                   setEditingItem(it);
+                  setActiveTargetFolderId(it.folderId || null);
                   setIsAddItemModalOpen(true);
                 }}
+                onSaveFolder={handleSaveFolder}
+                onDeleteFolder={handleDeleteFolder}
                 onOpenAiAssist={handleOpenAiAssist}
                 onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
               />
@@ -259,8 +285,15 @@ export const App: React.FC = () => {
           onClose={() => {
             setIsAddItemModalOpen(false);
             setEditingItem(null);
+            setActiveTargetFolderId(null);
           }}
           subjectId={selectedSubjectId}
+          folderId={activeTargetFolderId}
+          folderName={
+            activeTargetFolderId
+              ? folders.find((f) => f.id === activeTargetFolderId)?.name
+              : undefined
+          }
           onItemAdded={handleItemSaved}
           initialItem={editingItem}
           onDeleteItem={handleDeleteItem}

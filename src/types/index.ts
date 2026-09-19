@@ -11,6 +11,15 @@ export interface Subject {
   itemCount?: number;
 }
 
+export interface StudyFolder {
+  id: string;
+  subjectId: string;
+  parentId?: string | null; // null/undefined for root level of the subject
+  name: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
 export interface VideoBookmark {
   id: string;
   timestamp: number; // in seconds
@@ -21,6 +30,7 @@ export interface VideoBookmark {
 export interface StudyItem {
   id: string;
   subjectId: string;
+  folderId?: string | null; // null/undefined for root level of subject
   title: string;
   type: ContentType;
   fileName?: string;

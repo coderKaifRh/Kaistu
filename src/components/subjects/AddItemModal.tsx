@@ -19,6 +19,8 @@ interface AddItemModalProps {
   isOpen: boolean;
   onClose: () => void;
   subjectId: string;
+  folderId?: string | null;
+  folderName?: string;
   onItemAdded: (item: StudyItem) => void;
   initialItem?: StudyItem | null;
   onDeleteItem?: (id: string) => void;
@@ -28,6 +30,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   isOpen,
   onClose,
   subjectId,
+  folderId,
+  folderName,
   onItemAdded,
   initialItem,
   onDeleteItem,
@@ -85,6 +89,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         ...(initialItem || {}),
         id: itemId,
         subjectId,
+        folderId: initialItem ? initialItem.folderId : (folderId || null),
         title: title.trim(),
         type: selectedType,
         tags,
@@ -143,7 +148,11 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 {isEditing ? 'Edit Study Material' : 'Add Study Material'}
               </h2>
               <p className="text-[11px] text-slate-400">
-                {isEditing ? 'Update title, links, tags, or file' : 'PDF, Word, PPTX, YouTube, or Markdown Note'}
+                {isEditing
+                  ? 'Update title, links, tags, or file'
+                  : folderName
+                  ? `Adding to: ${folderName}`
+                  : 'PDF, Word, PPTX, YouTube, or Markdown Note'}
               </p>
             </div>
           </div>

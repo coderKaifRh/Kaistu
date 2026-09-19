@@ -188,9 +188,13 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#07090e] p-4 sm:p-6 md:p-8">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#07060e] text-slate-100 hero-iso-grid relative p-4 sm:p-6 md:p-8 select-none">
+      {/* Ambient background glows */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-10 left-10 w-80 h-80 bg-pink-600/10 rounded-full blur-[120px] pointer-events-none" />
+
       {/* Top Header & Breadcrumb */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 relative z-10">
         <div className="flex items-center gap-3">
           {onToggleMobileSidebar && (
             <button

@@ -15,7 +15,14 @@ import {
   Atom,
   Sigma,
   Globe2,
+  Timer,
+  Download,
+  GraduationCap,
+  Video,
+  FileText,
+  Search,
 } from 'lucide-react';
+import { PomodoroBar } from '../pomodoro/PomodoroBar';
 
 interface CoursesHeroViewProps {
   subjects: Subject[];
@@ -27,6 +34,7 @@ interface CoursesHeroViewProps {
   onEditSubject?: (subject: Subject) => void;
   onDeleteSubject: (id: string) => void;
   onOpenAiHub: () => void;
+  onExportData?: () => void;
 }
 
 export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
@@ -39,33 +47,37 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
   onEditSubject,
   onDeleteSubject,
   onOpenAiHub,
+  onExportData,
 }) => {
   const [activeCourseIndex, setActiveCourseIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFocusSessionOpen, setIsFocusSessionOpen] = useState(false);
 
-  // If user has subjects, feature the active one; otherwise provide the featured flagship showcase
-  const featuredSubject: Subject =
-    subjects.length > 0 && subjects[activeCourseIndex]
-      ? subjects[activeCourseIndex]
-      : {
-          id: 'flagship-ph-course',
-          name: 'AI-Driven Full Stack Web Engineering',
-          code: 'HERO-2026',
-          description:
-            'Welcome to Programming Hero! Start your journey with AI-Driven Full Stack Engineering, where you will learn modern web development from the fundamentals to real-world full-stack projects using JavaScript, TypeScript, React, Next.js, Node.js, Express, MongoDB, authentication, deployment, and AI-assisted development workflows. Build job-relevant skills with guided support until you are ready for an internship or full-time developer role.',
-          icon: 'Code2',
-          color: 'from-purple-600 via-pink-600 to-indigo-600',
-          createdAt: Date.now(),
-        };
+  // User's active featured subject from their real subjects
+  const hasSubjects = subjects.length > 0;
+  const safeIndex = activeCourseIndex < subjects.length ? activeCourseIndex : 0;
+  const featuredSubject: Subject | null = hasSubjects ? subjects[safeIndex] : null;
 
-  // Find first material in featured subject for "Let's Code" button
-  const featuredItems = items.filter((i) => i.subjectId === featuredSubject.id);
-  const firstFeaturedItem = featuredItems[0];
+  // Real items and folders for the featured subject
+  const featuredSubjectItems = featuredSubject
+    ? items.filter((i) => i.subjectId === featuredSubject.id)
+    : [];
+  const featuredSubjectFolders = featuredSubject
+    ? folders.filter((f) => f.subjectId === featuredSubject.id)
+    : [];
 
-  const handleLetsCode = () => {
-    if (firstFeaturedItem) {
-      onOpenItem(firstFeaturedItem);
-    } else {
+  // Recent / primary item to launch directly from the hero play button
+  const firstVideo = featuredSubjectItems.find((i) => i.type === 'youtube');
+  const firstPdf = featuredSubjectItems.find((i) => i.type === 'pdf');
+  const primaryItem = firstVideo || firstPdf || featuredSubjectItems[0];
+
+  const handleHeroAction = () => {
+    if (primaryItem) {
+      onOpenItem(primaryItem);
+    } else if (featuredSubject) {
       onSelectSubject(featuredSubject.id);
+    } else {
+      onAddSubject();
     }
   };
 
@@ -86,15 +98,22 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
     }
   };
 
+  const filteredSubjects = subjects.filter(
+    (s) =>
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.code && s.code.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#07060e] text-slate-100 hero-iso-grid relative select-none">
-      {/* Ambient background glows */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Ambient glowing atmosphere background */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/15 rounded-full blur-[130px] pointer-events-none" />
       <div className="absolute top-1/3 right-10 w-[450px] h-[450px] bg-pink-600/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 left-10 w-80 h-80 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Floating 3D Geometric Crystal Prism (matches top-right in uploaded image) */}
-      <div className="absolute top-24 right-6 sm:right-16 lg:right-28 pointer-events-none z-10 hidden sm:block animate-float-prism">
+      {/* Floating 3D Geometric Crystal Prism (matches exact aesthetic from uploaded image) */}
+      <div className="absolute top-20 right-6 sm:right-16 lg:right-24 pointer-events-none z-10 hidden sm:block animate-float-prism">
         <svg
           width="110"
           height="110"
@@ -103,14 +122,11 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
           xmlns="http://www.w3.org/2000/svg"
           className="drop-shadow-[0_0_35px_rgba(217,70,239,0.7)]"
         >
-          {/* Main faceted crystal */}
           <polygon points="50,5 95,50 50,95 5,50" fill="url(#prismGrad1)" opacity="0.95" />
           <polygon points="50,5 95,50 50,45" fill="url(#prismGrad2)" opacity="0.9" />
           <polygon points="5,50 50,5 50,45" fill="url(#prismGrad3)" opacity="0.85" />
           <polygon points="5,50 50,95 50,45" fill="url(#prismGrad4)" opacity="0.9" />
           <polygon points="95,50 50,95 50,45" fill="url(#prismGrad5)" opacity="0.95" />
-
-          {/* Highlight edges */}
           <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(255,255,255,0.7)" strokeWidth="1" />
           <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(255,255,255,0.5)" strokeWidth="0.8" />
 
@@ -140,71 +156,97 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
         </svg>
       </div>
 
-      {/* Top Navbar */}
-      <nav className="w-full px-6 sm:px-12 py-4 flex items-center justify-between z-20 border-b border-white/[0.06] bg-[#07060e]/80 backdrop-blur-xl">
-        {/* Brand Logo (Programming Hero style with purple polygon) */}
-        <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setActiveCourseIndex(0)}>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-pink-500 flex items-center justify-center text-white shadow-[0_0_22px_rgba(168,85,247,0.55)] ring-1 ring-white/30">
-            <span className="font-black text-sm tracking-tighter">P</span>
+      {/* Top Navbar in Glowing Dark Theme */}
+      <nav className="w-full px-4 sm:px-10 py-3.5 flex items-center justify-between z-30 border-b border-white/[0.07] bg-[#07060e]/85 backdrop-blur-xl sticky top-0">
+        {/* Brand Logo with Glowing Purple Badge */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-pink-500 flex items-center justify-center text-white shadow-[0_0_24px_rgba(168,85,247,0.55)] ring-1 ring-white/30">
+            <GraduationCap className="w-5 h-5" />
           </div>
           <div className="leading-tight">
-            <div className="text-sm font-black text-white tracking-tight flex items-center gap-1">
-              Programming
-              <span className="text-[10px] bg-purple-500/20 text-purple-300 font-mono px-1.5 py-0.2 rounded border border-purple-500/30 ml-1">
-                HERO
+            <div className="text-sm font-black text-white tracking-tight flex items-center gap-1.5">
+              <span>KaiStu</span>
+              <span className="text-[9px] font-bold tracking-widest bg-purple-500/20 text-purple-300 font-mono px-1.5 py-0.5 rounded border border-purple-500/30">
+                PRO
               </span>
             </div>
-            <div className="text-[11px] font-bold text-transparent bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text tracking-wider">
-              Hero • KaiStu
-            </div>
+            <p className="text-[10px] text-purple-300/70 font-medium tracking-wide">Study Companion</p>
           </div>
         </div>
 
-        {/* Center/Right Nav Links */}
-        <div className="flex items-center gap-5 sm:gap-8 text-xs sm:text-sm font-semibold">
-          <button
-            onClick={() => setActiveCourseIndex(0)}
-            className="text-white hover:text-purple-400 transition-colors hidden sm:block"
-          >
-            Home
-          </button>
+        {/* Center / Right Links */}
+        <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm font-semibold">
           <a
-            href="#all-courses"
-            className="text-slate-300 hover:text-white transition-colors hidden sm:block"
+            href="#all-subjects"
+            className="text-white hover:text-purple-300 transition-colors hidden sm:block"
           >
-            Products
+            Subjects
           </a>
+
+          {/* Focus Timer Trigger */}
           <button
-            onClick={() =>
-              alert(
-                'KaiStu • Powered by Programming Hero UI style. Built for 100% offline study, videos, notes, PDFs, and continuous revision!'
-              )
-            }
-            className="text-slate-300 hover:text-white transition-colors hidden sm:block"
+            onClick={() => setIsFocusSessionOpen((prev) => !prev)}
+            className={`transition-colors flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${
+              isFocusSessionOpen
+                ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40'
+                : 'text-slate-300 hover:text-white'
+            }`}
+            title="Focus Session (Pomodoro)"
           >
-            About
+            <Timer className="w-4 h-4 text-purple-400" />
+            <span className="hidden md:inline">Focus Session</span>
           </button>
+
+          {/* AI Hub */}
           <button
             onClick={onOpenAiHub}
             className="text-purple-300 hover:text-purple-200 transition-colors flex items-center gap-1"
           >
             <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-            <span>Success</span>
+            <span className="hidden xs:inline">AI Hub</span>
           </button>
 
+          {/* Backup / Export */}
+          {onExportData && (
+            <button
+              onClick={onExportData}
+              className="text-slate-400 hover:text-slate-200 transition-colors hidden lg:flex items-center gap-1"
+              title="Backup all study data as JSON"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Backup</span>
+            </button>
+          )}
+
+          {/* Primary Action: + New Subject Button (matching top right CTA) */}
           <button
             onClick={onAddSubject}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">New Course</span>
+            <span>New Subject</span>
           </button>
         </div>
       </nav>
 
-      {/* Main Container */}
+      {/* Embedded Collapsible Focus Session Panel */}
+      {isFocusSessionOpen && (
+        <div className="w-full bg-[#0c0818]/95 border-b border-purple-900/40 p-4 relative z-20 animate-in slide-in-from-top-2 duration-200 shadow-2xl backdrop-blur-md">
+          <div className="max-w-xl mx-auto flex flex-col items-center">
+            <div className="text-[11px] font-bold text-purple-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Timer className="w-3.5 h-3.5 text-pink-400" />
+              <span>KaiStu Pomodoro Focus Timer</span>
+            </div>
+            <div className="w-full">
+              <PomodoroBar />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Area */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 md:px-12 py-8 sm:py-12 flex-1 flex flex-col justify-center">
-        {/* Centered Heading: "Our Courses_" */}
+        {/* Section Heading: "Our Courses_" / "My Subjects_" */}
         <div className="text-center mb-10 sm:mb-14 relative z-10">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight inline-flex items-center">
             Our Courses<span className="text-purple-400 animate-pulse">_</span>
@@ -221,46 +263,63 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
               {/* Card top glossy edge reflection */}
               <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent" />
 
-              {/* Video / Banner Mockup */}
+              {/* Preview Banner Mockup */}
               <div className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a1333] via-[#2a174a] to-[#120924] border border-white/[0.1] mb-5 flex flex-col justify-between p-4 shadow-inner">
                 {/* Banner top bar */}
                 <div className="flex items-center justify-between text-[10px] font-black tracking-wider text-pink-300 uppercase">
                   <span className="bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 rounded-md">
-                    AI-DRIVEN FULL STACK
+                    {featuredSubject ? featuredSubject.code || 'COURSE' : 'START NOW'}
                   </span>
-                  <span className="text-purple-300 font-bold">Programming Hero</span>
+                  <span className="text-purple-300 font-bold">KaiStu Studio</span>
                 </div>
 
-                {/* Interactive Play Button (Pink circle with white triangle from image) */}
+                {/* Center Action Button (Pink circular play button as in the image) */}
                 <div
-                  onClick={handleLetsCode}
+                  onClick={handleHeroAction}
                   className="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-600 via-pink-500 to-rose-500 flex items-center justify-center text-white shadow-[0_0_30px_rgba(236,72,153,0.7)] mx-auto my-auto group-hover:scale-115 transition-transform duration-200 cursor-pointer ring-4 ring-pink-500/20"
-                  title="Play Course Preview"
+                  title={primaryItem ? `Open "${primaryItem.title}"` : 'Explore Subject'}
                 >
-                  <Play className="w-6 h-6 fill-white ml-1" />
+                  {primaryItem?.type === 'youtube' ? (
+                    <Play className="w-6 h-6 fill-white ml-1" />
+                  ) : primaryItem?.type === 'pdf' ? (
+                    <FileText className="w-6 h-6" />
+                  ) : (
+                    <BookOpen className="w-6 h-6" />
+                  )}
                 </div>
 
-                {/* Tech stacks icons at bottom of banner */}
+                {/* Bottom stats of banner */}
                 <div className="flex items-center justify-between text-[10px] text-slate-300">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="font-mono text-[10px] text-emerald-300">Live Course</span>
+                    <span className="font-mono text-[10px] text-emerald-300">
+                      {featuredSubjectItems.length} Materials
+                    </span>
                   </div>
-                  <span className="text-slate-400 font-mono">React • Next • AI</span>
+                  <span className="text-slate-400 font-mono">
+                    {featuredSubjectFolders.length} Chapters
+                  </span>
                 </div>
               </div>
 
               {/* Card Bottom Details */}
               <div className="space-y-4">
-                <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug">
-                  {featuredSubject.name}
+                <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug truncate">
+                  {featuredSubject ? featuredSubject.name : 'Welcome to KaiStu'}
                 </h3>
 
+                {primaryItem && (
+                  <p className="text-xs text-purple-300/80 truncate flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-400" />
+                    <span>Up next: {primaryItem.title}</span>
+                  </p>
+                )}
+
                 <button
-                  onClick={handleLetsCode}
+                  onClick={handleHeroAction}
                   className="w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs tracking-wide shadow-[0_0_25px_rgba(147,51,234,0.45)] transition-all flex items-center gap-2"
                 >
-                  <span>Let's Code</span>
+                  <span>{primaryItem ? "Let's Study" : hasSubjects ? 'Explore Subject' : '+ Create Subject'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -270,19 +329,45 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
           {/* Right Column: Course Headline & Description */}
           <div className="lg:col-span-6 space-y-6 text-left">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.15] text-transparent bg-gradient-to-r from-purple-400 via-fuchsia-300 to-indigo-300 bg-clip-text">
-              Build The Future with AI Driven Full Stack Web Engineering
+              {featuredSubject ? featuredSubject.name : 'Organize Every Subject & Lecture with KaiStu'}
             </h2>
 
             <p className="text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed font-normal">
-              {featuredSubject.description ||
-                'Welcome to Programming Hero! Start your journey with AI-Driven Full Stack Engineering, where you will learn modern web development from the fundamentals to real-world full-stack projects using JavaScript, TypeScript, React, Next.js, Node.js, Express, MongoDB, authentication, deployment, and AI-assisted development workflows. Build job-relevant skills with guided support until you are ready for an internship or full-time developer role.'}
+              {featuredSubject?.description ||
+                'Organize all your lecture videos with timestamped notes, continuous-scroll PDFs, PowerPoint slides, and flashcards in one synchronized offline workspace. Study with total focus and zero server cost.'}
             </p>
 
-            {/* CTA Buttons (Explore & Success from image) */}
+            {/* Quick Metrics Bar */}
+            {hasSubjects && featuredSubject && (
+              <div className="flex items-center gap-3 flex-wrap text-xs text-purple-200">
+                <div className="px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-1.5">
+                  <Folder className="w-3.5 h-3.5 text-purple-400" />
+                  <span>{featuredSubjectFolders.length} Chapter Folders</span>
+                </div>
+                <div className="px-3 py-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-pink-400" />
+                  <span>{featuredSubjectItems.length} Study Materials</span>
+                </div>
+                {firstVideo && (
+                  <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1.5">
+                    <Video className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Video Lectures Ready</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons ("Explore" & "AI Assistant" / "Focus") */}
             <div className="flex items-center gap-4 pt-2">
               <button
-                onClick={() => onSelectSubject(featuredSubject.id)}
-                className="px-7 py-3 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold text-xs sm:text-sm shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all flex items-center gap-2 hover:scale-105"
+                onClick={() => {
+                  if (featuredSubject) {
+                    onSelectSubject(featuredSubject.id);
+                  } else {
+                    onAddSubject();
+                  }
+                }}
+                className="px-6 sm:px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm sm:text-base shadow-[0_0_35px_rgba(168,85,247,0.5)] transition-all flex items-center gap-2"
               >
                 <span>Explore</span>
                 <ArrowRight className="w-4 h-4" />
@@ -290,68 +375,89 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
 
               <button
                 onClick={onOpenAiHub}
-                className="px-6 py-3 rounded-xl border border-purple-500/40 bg-purple-950/25 hover:bg-purple-900/40 text-purple-200 hover:text-white font-semibold text-xs sm:text-sm shadow-sm transition-all"
+                className="px-6 sm:px-8 py-3 rounded-2xl border border-purple-500/50 hover:bg-purple-500/15 text-purple-300 hover:text-white font-bold text-sm sm:text-base transition-all shadow-sm flex items-center gap-2"
               >
-                Success
+                <Sparkles className="w-4 h-4 text-pink-400" />
+                <span>AI Assistant</span>
               </button>
             </div>
+
+            {/* Course Selector Tabs (if user has multiple subjects) */}
+            {subjects.length > 1 && (
+              <div className="pt-4 border-t border-white/[0.08]">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Switch Featured Subject:
+                </p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {subjects.map((sub, idx) => (
+                    <button
+                      key={sub.id}
+                      onClick={() => setActiveCourseIndex(idx)}
+                      className={`text-xs px-3 py-1.5 rounded-xl transition-all font-semibold flex items-center gap-1.5 ${
+                        safeIndex === idx
+                          ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.5)] ring-1 ring-purple-400/50'
+                          : 'bg-white/[0.05] text-slate-400 hover:text-white hover:bg-white/[0.1] border border-white/[0.05]'
+                      }`}
+                    >
+                      <span>{sub.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Section Divider & "All Courses" Grid */}
-        <div id="all-courses" className="pt-10 border-t border-white/[0.08] relative z-10">
-          <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+        {/* ---------------------------------------------------- */}
+        {/* All Subjects / Courses Catalog Grid */}
+        {/* ---------------------------------------------------- */}
+        <div id="all-subjects" className="pt-10 border-t border-purple-900/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                <span>Explore All Courses & Subjects</span>
-                <span className="text-xs font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md">
-                  {subjects.length} Total
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
+                <Layers className="w-5 h-5 text-purple-400" />
+                <span>All Subjects & Courses</span>
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  {subjects.length}
                 </span>
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Each course features chapters, nested folders, PDFs, Word docs, slides, and video lectures.
+                Access your nested chapter folders, continuous scroll PDFs, and video lectures.
               </p>
             </div>
 
-            <button
-              onClick={onAddSubject}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 text-white text-xs font-bold shadow-md shadow-purple-600/30 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create New Course</span>
-            </button>
+            {/* Search Input */}
+            {subjects.length > 0 && (
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search subjects..."
+                  className="w-full pl-9 pr-4 py-2 bg-[#0e0a1f] border border-purple-500/20 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/60 transition"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Courses Cards Grid */}
+          {/* Subjects Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subjects.map((sub, idx) => {
-              const subItems = items.filter((i) => i.subjectId === sub.id);
+            {filteredSubjects.map((sub) => {
               const subFolders = folders.filter((f) => f.subjectId === sub.id);
-              const isCurrentFeatured = subjects[activeCourseIndex]?.id === sub.id;
+              const subItems = items.filter((i) => i.subjectId === sub.id);
 
               return (
                 <div
                   key={sub.id}
-                  onClick={() => {
-                    setActiveCourseIndex(idx);
-                    onSelectSubject(sub.id);
-                  }}
-                  className={`group rounded-3xl p-5 cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden ${
-                    isCurrentFeatured
-                      ? 'bg-gradient-to-b from-[#21113f] to-[#120824] border-2 border-purple-500 shadow-[0_0_35px_rgba(168,85,247,0.3)]'
-                      : 'bg-gradient-to-b from-[#130b24] to-[#0a0514] border border-white/[0.08] hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.18)]'
-                  }`}
+                  onClick={() => onSelectSubject(sub.id)}
+                  className="bg-[#120824]/70 hover:bg-[#180d30]/90 border border-purple-500/20 hover:border-purple-500/50 rounded-2xl p-5 transition-all duration-200 shadow-md hover:shadow-[0_0_30px_rgba(168,85,247,0.2)] flex flex-col justify-between group cursor-pointer relative overflow-hidden"
                 >
-                  {/* Subtle top glossy highlight */}
-                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-400/40 to-transparent" />
-
-                  <div>
-                    {/* Header: Icon & Badges */}
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className={`w-10 h-10 rounded-2xl bg-gradient-to-tr ${sub.color} flex items-center justify-center text-white shadow-md shadow-purple-900/40 group-hover:scale-105 transition-transform`}
-                        >
+                  <div className="space-y-3">
+                    {/* Top Row: Icon + Code + Actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 flex items-center justify-center group-hover:scale-105 transition-transform">
                           {getSubjectIcon(sub.icon)}
                         </div>
                         <div>
@@ -382,7 +488,7 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
                               onDeleteSubject(sub.id);
                             }
                           }}
-                          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-white/[0.08] rounded-lg transition"
+                          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
                           title="Delete course"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -390,54 +496,52 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Course Title */}
-                    <h3 className="text-base font-bold text-white group-hover:text-purple-300 transition-colors line-clamp-1 mb-2">
-                      {sub.name}
-                    </h3>
-
-                    {/* Course Description */}
-                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">
-                      {sub.description || 'Access chapters, video lectures, PDFs, and notes.'}
-                    </p>
-
-                    {/* Stats pills */}
-                    <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mb-4">
-                      <span className="flex items-center gap-1 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-md">
-                        <Folder className="w-3 h-3 text-purple-400" />
-                        <span>{subFolders.length} chapters</span>
-                      </span>
-                      <span className="flex items-center gap-1 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded-md">
-                        <Layers className="w-3 h-3 text-pink-400" />
-                        <span>{subItems.length} materials</span>
-                      </span>
+                    {/* Title & Description */}
+                    <div>
+                      <h3 className="text-base font-bold text-white group-hover:text-purple-200 transition line-clamp-1">
+                        {sub.name}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                        {sub.description || 'No description provided. Click to open chapter folders and materials.'}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Card Footer Button */}
-                  <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs font-semibold">
-                    <span className="text-purple-400 group-hover:text-purple-300 flex items-center gap-1">
-                      <span>Explore Course</span>
+                  {/* Card Footer Info */}
+                  <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3 text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Folder className="w-3.5 h-3.5 text-purple-400" />
+                        <span>{subFolders.length} Chapters</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <FileText className="w-3.5 h-3.5 text-pink-400" />
+                        <span>{subItems.length} Items</span>
+                      </span>
+                    </div>
+
+                    <div className="text-purple-400 group-hover:text-purple-300 font-bold flex items-center gap-1 text-xs">
+                      <span>Explore</span>
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      {new Date(sub.createdAt).toLocaleDateString()}
-                    </span>
+                    </div>
                   </div>
                 </div>
               );
             })}
 
-            {/* "+ Add New Course" Card */}
+            {/* + Add New Subject Tile */}
             <div
               onClick={onAddSubject}
-              className="rounded-3xl border border-dashed border-purple-500/30 hover:border-purple-500/60 bg-[#0d061c]/40 hover:bg-[#150a2b]/60 p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[220px] group"
+              className="border-2 border-dashed border-purple-500/30 hover:border-purple-500/60 bg-purple-500/[0.03] hover:bg-purple-500/[0.08] rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group min-h-[190px]"
             >
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-300 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(168,85,247,0.3)]">
                 <Plus className="w-6 h-6" />
               </div>
-              <h4 className="text-sm font-bold text-white tracking-tight">Create Custom Course</h4>
-              <p className="text-xs text-slate-400 max-w-xs mt-1">
-                Add computer science, physics, web development, or any exam subject with nested chapters.
+              <h3 className="text-sm font-bold text-white group-hover:text-purple-200 transition">
+                + Create Custom Subject
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
+                Add a new course or subject with custom code, icon & description.
               </p>
             </div>
           </div>

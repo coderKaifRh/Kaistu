@@ -79,17 +79,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className="w-72 sm:w-80 md:w-64 lg:w-72 bg-[#090c13] border-r border-white/[0.07] flex flex-col h-full shrink-0 select-none shadow-2xl md:shadow-none">
+    <aside className="w-72 sm:w-80 md:w-64 lg:w-72 bg-[#07060e] border-r border-purple-900/30 flex flex-col h-full shrink-0 select-none shadow-2xl md:shadow-none">
       {/* App Branding */}
       <div className="px-4 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-[0_0_16px_rgba(99,102,241,0.3)] ring-1 ring-white/20">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-pink-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(168,85,247,0.5)] ring-1 ring-white/20">
             <GraduationCap className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-sm tracking-tight text-white">KaiStu</span>
-              <span className="text-[9px] font-bold tracking-widest bg-indigo-500/15 text-indigo-300 font-mono px-1.5 py-0.2 rounded border border-indigo-500/30">
+              <span className="text-[9px] font-bold tracking-widest bg-purple-500/20 text-purple-300 font-mono px-1.5 py-0.5 rounded border border-purple-500/30">
                 PRO
               </span>
             </div>

@@ -215,6 +215,7 @@ export const App: React.FC = () => {
             setAiInitialPrompt(undefined);
             setIsAiHubOpen(true);
           }}
+          onExportData={handleExportData}
         />
       ) : (
         /* Standard Dashboard Layout with Sidebar & Subject Details */

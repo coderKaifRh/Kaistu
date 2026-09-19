@@ -285,10 +285,11 @@ export const Workstation: React.FC<WorkstationProps> = ({
         <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={onBack}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] transition shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white border border-white/[0.1] transition shrink-0 font-medium text-xs shadow-sm group"
             title="Return to Subjects Dashboard"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5 text-indigo-400 group-hover:-translate-x-0.5 transition-transform" />
+            <span className="font-semibold text-[11px] sm:text-xs">Dashboard</span>
           </button>
 
           <div className="h-4 w-[1px] bg-white/[0.08] shrink-0 hidden sm:block" />

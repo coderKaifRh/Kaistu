@@ -44,7 +44,25 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const handlePopState = () => {
+      // Return to dashboard instead of exiting to browser
+      setActiveItem(null);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  const openItemInWorkstation = (item: StudyItem) => {
+    setActiveItem(item);
+    window.history.pushState({ workstation: true, itemId: item.id }, '', `#item-${item.id}`);
+  };
+
+  const closeWorkstation = () => {
+    setActiveItem(null);
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  };
 
   const handleSaveSubject = async (subject: Subject) => {
     await StorageService.saveSubject(subject);
@@ -62,7 +80,7 @@ export const App: React.FC = () => {
 
     if (selectedSubjectId === id) {
       setSelectedSubjectId(updatedSubs.length > 0 ? updatedSubs[0].id : null);
-      setActiveItem(null);
+      closeWorkstation();
     }
   };
 
@@ -78,14 +96,14 @@ export const App: React.FC = () => {
     await StorageService.deleteItem(id);
     setItems((prev) => prev.filter((i) => i.id !== id));
     if (activeItem?.id === id) {
-      setActiveItem(null);
+      closeWorkstation();
     }
   };
 
   const handleItemAdded = async (newItem: StudyItem) => {
     setItems((prev) => [newItem, ...prev]);
-    // Automatically open the newly added material in the Workstation!
-    setActiveItem(newItem);
+    // Automatically open the newly added material in the Workstation with history support!
+    openItemInWorkstation(newItem);
   };
 
   const handleOpenAiAssist = (contextPrompt: string) => {
@@ -134,9 +152,9 @@ export const App: React.FC = () => {
           subject={activeSubject}
           item={activeItem}
           allItems={subjectItems}
-          onBack={() => setActiveItem(null)}
+          onBack={closeWorkstation}
           onUpdateItem={handleUpdateItem}
-          onSelectItem={(it) => setActiveItem(it)}
+          onSelectItem={(it) => openItemInWorkstation(it)}
           onOpenAiAssist={handleOpenAiAssist}
           onAddNewMaterial={() => setIsAddItemModalOpen(true)}
         />
@@ -162,7 +180,7 @@ export const App: React.FC = () => {
               selectedSubjectId={selectedSubjectId}
               onSelectSubject={(id) => {
                 setSelectedSubjectId(id);
-                setActiveItem(null);
+                closeWorkstation();
                 setIsMobileSidebarOpen(false);
               }}
               onAddSubject={() => setIsSubjectModalOpen(true)}
@@ -184,7 +202,7 @@ export const App: React.FC = () => {
                 subject={activeSubject}
                 items={subjectItems}
                 onBack={() => {}}
-                onSelectItem={(item) => setActiveItem(item)}
+                onSelectItem={(item) => openItemInWorkstation(item)}
                 onAddNewMaterial={() => setIsAddItemModalOpen(true)}
                 onDeleteItem={handleDeleteItem}
                 onOpenAiAssist={handleOpenAiAssist}

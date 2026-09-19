@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import type { StudyItem } from '../../types';
 import { StorageService } from '../../services/storage';
 import JSZip from 'jszip';
@@ -7,8 +7,6 @@ import {
   Download,
   Sparkles,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
   Maximize2,
   Minimize2,
   AlertCircle,
@@ -28,11 +26,14 @@ interface SlideContent {
 
 export const PptxViewer: React.FC<PptxViewerProps> = ({ item, onOpenAiAssist }) => {
   const [slides, setSlides] = useState<SlideContent[]>([]);
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [activeSlideNum, setActiveSlideNum] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
     let currentUrl: string | null = null;
@@ -108,7 +109,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ item, onOpenAiAssist }) 
         }
 
         setSlides(parsedSlides);
-        setCurrentSlideIndex(0);
+        setActiveSlideNum(parsedSlides[0]?.slideNumber || 1);
       } catch (err: any) {
         console.error('Error parsing PPTX:', err);
         setError('Error reading PowerPoint presentation: ' + (err.message || 'Unknown error'));
@@ -124,6 +125,40 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ item, onOpenAiAssist }) 
     };
   }, [item.fileStorageKey, item.id]);
 
+  // Track which slide is visible on scroll
+  useEffect(() => {
+    if (slides.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const num = parseInt(entry.target.getAttribute('data-slide-num') || '1', 10);
+            setActiveSlideNum(num);
+          }
+        }
+      },
+      {
+        root: scrollContainerRef.current,
+        threshold: 0.4,
+      }
+    );
+
+    slides.forEach((s) => {
+      const el = slideRefs.current[s.slideNumber];
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [slides]);
+
+  const scrollToSlide = (slideNum: number) => {
+    const el = slideRefs.current[slideNum];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handleDownload = () => {
     if (!blobUrl) return;
     const a = document.createElement('a');
@@ -134,42 +169,42 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ item, onOpenAiAssist }) 
     document.body.removeChild(a);
   };
 
-  const currentSlide = slides[currentSlideIndex];
+  const activeSlide = slides.find((s) => s.slideNumber === activeSlideNum) || slides[0];
 
   return (
     <div
-      className={`flex flex-col h-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-2xl transition-all ${
+      className={`flex flex-col h-full bg-[#080a0f] rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl transition-all ${
         isFullscreen ? 'fixed inset-0 z-50 rounded-none' : ''
       }`}
     >
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#0c1017] border-b border-white/[0.08] shrink-0 select-none">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="bg-amber-500/20 text-amber-400 text-xs font-semibold px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1 shrink-0">
+          <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
             <Presentation className="w-3.5 h-3.5" /> PPTX
           </span>
-          <h3 className="text-xs font-semibold text-slate-200 truncate" title={item.title}>
+          <h3 className="text-xs font-semibold text-slate-200 truncate max-w-[160px] sm:max-w-xs" title={item.title}>
             {item.title}
           </h3>
           {slides.length > 0 && (
-            <span className="text-[11px] text-slate-500 font-medium">
-              ({slides.length} slides)
+            <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
+              (Slide {activeSlideNum} of {slides.length})
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {onOpenAiAssist && currentSlide && (
+          {onOpenAiAssist && activeSlide && (
             <button
               onClick={() =>
                 onOpenAiAssist(
-                  `I am studying Slide ${currentSlide.slideNumber} of "${item.title}".
-Title: ${currentSlide.title}
-Content: ${currentSlide.paragraphs.join('\n')}
-Can you explain this slide in detail with simple analogies and examples?`
+                  `I am studying Slide ${activeSlide.slideNumber} of "${item.title}".
+Title: ${activeSlide.title}
+Content: ${activeSlide.paragraphs.join('\n')}
+Can you explain this slide in detail with simple analogies and key exam highlights?`
                 )
               }
-              className="flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg transition-colors font-medium shadow-sm"
+              className="flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-xl transition font-semibold shadow-sm"
               title="Explain current slide with AI"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -179,7 +214,7 @@ Can you explain this slide in detail with simple analogies and examples?`
 
           <button
             onClick={handleDownload}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition"
             title="Download original PPTX"
           >
             <Download className="w-4 h-4" />
@@ -187,7 +222,7 @@ Can you explain this slide in detail with simple analogies and examples?`
 
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -195,12 +230,12 @@ Can you explain this slide in detail with simple analogies and examples?`
         </div>
       </div>
 
-      {/* Main Slide Workspace */}
+      {/* Main Slide Workspace with Continuous Vertical Scrolling */}
       <div className="flex flex-1 min-h-0">
         {loading && (
           <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-amber-500 mb-2" />
-            <p className="text-xs font-medium">Extracting PowerPoint slides...</p>
+            <p className="text-xs font-semibold text-white">Extracting PowerPoint slides...</p>
           </div>
         )}
 
@@ -213,89 +248,82 @@ Can you explain this slide in detail with simple analogies and examples?`
 
         {!loading && !error && slides.length > 0 && (
           <>
-            {/* Left Thumbnails Sidebar */}
-            <div className="w-48 bg-slate-900 border-r border-slate-800 overflow-y-auto p-2.5 space-y-2 hidden md:block shrink-0">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold px-1 mb-2">
+            {/* Left Thumbnails Sidebar (Quick Navigation) */}
+            <div className="w-52 bg-[#090c13] border-r border-white/[0.07] overflow-y-auto p-3 space-y-2 hidden md:block shrink-0">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-bold uppercase tracking-wider px-1 mb-2">
                 <Layers className="w-3.5 h-3.5 text-amber-400" />
                 <span>Slides ({slides.length})</span>
               </div>
-              {slides.map((s, idx) => (
+              {slides.map((s) => (
                 <button
                   key={s.slideNumber}
-                  onClick={() => setCurrentSlideIndex(idx)}
-                  className={`w-full text-left p-2 rounded-lg border transition text-xs ${
-                    idx === currentSlideIndex
-                      ? 'bg-amber-500/10 border-amber-500/50 text-amber-300'
-                      : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  onClick={() => scrollToSlide(s.slideNumber)}
+                  className={`w-full text-left p-2.5 rounded-xl border transition text-xs ${
+                    s.slideNumber === activeSlideNum
+                      ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 font-semibold shadow-sm'
+                      : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
                   }`}
                 >
                   <div className="font-mono text-[10px] text-slate-500 mb-0.5">Slide {s.slideNumber}</div>
-                  <div className="font-medium truncate">{s.title || `Slide ${s.slideNumber}`}</div>
+                  <div className="truncate">{s.title || `Slide ${s.slideNumber}`}</div>
                 </button>
               ))}
             </div>
 
-            {/* Slide Stage Canvas */}
-            <div className="flex-1 flex flex-col items-center justify-between p-4 md:p-8 bg-slate-950 overflow-y-auto">
-              <div className="w-full max-w-3xl aspect-[16/10] bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 rounded-2xl border border-slate-700 p-8 shadow-2xl flex flex-col justify-between relative overflow-hidden">
-                {/* Decorative Accent */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+            {/* Continuous Vertical Scroll Slide Feed */}
+            <div
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 flex flex-col items-center bg-[#07090e]"
+            >
+              {slides.map((slide) => (
+                <div
+                  key={slide.slideNumber}
+                  data-slide-num={slide.slideNumber}
+                  ref={(el) => {
+                    slideRefs.current[slide.slideNumber] = el;
+                  }}
+                  className="w-full max-w-3xl bg-[#0e121a] hover:bg-[#111622] rounded-2xl border border-white/[0.08] p-6 sm:p-8 shadow-xl flex flex-col justify-between relative overflow-hidden transition-all scroll-mt-6"
+                >
+                  {/* Decorative glow */}
+                  <div className="absolute top-0 right-0 w-36 h-36 bg-amber-500/[0.06] rounded-full blur-3xl pointer-events-none" />
 
-                {/* Slide Header */}
-                <div>
-                  <div className="flex items-center justify-between text-xs text-amber-400/80 font-mono mb-3">
-                    <span>SLIDE {currentSlide.slideNumber} OF {slides.length}</span>
-                    <span className="text-slate-500">{item.title}</span>
+                  {/* Slide Header */}
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-amber-400 font-mono mb-2">
+                      <span className="bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                        SLIDE {slide.slideNumber} OF {slides.length}
+                      </span>
+                      <span className="text-slate-500 text-[11px] truncate max-w-xs">{item.title}</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight border-b border-white/[0.06] pb-3.5 pt-1">
+                      {slide.title}
+                    </h2>
                   </div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight border-b border-slate-800 pb-4">
-                    {currentSlide.title}
-                  </h1>
+
+                  {/* Slide Body */}
+                  <div className="my-5 space-y-3">
+                    {slide.paragraphs.length > 0 ? (
+                      slide.paragraphs.map((p, pIdx) => (
+                        <div key={pIdx} className="flex items-start gap-3 text-slate-200 text-sm sm:text-base leading-relaxed">
+                          <span className="text-amber-400 text-lg leading-none select-none shrink-0 mt-0.5">•</span>
+                          <span>{p}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-slate-500 italic text-sm">No text content on this slide.</p>
+                    )}
+                  </div>
+
+                  {/* Slide Footer */}
+                  <div className="flex items-center justify-between pt-3.5 border-t border-white/[0.06] text-[11px] text-slate-500 font-mono">
+                    <span>KaiStu Presentation Scroll</span>
+                    <span>Slide {slide.slideNumber}</span>
+                  </div>
                 </div>
+              ))}
 
-                {/* Slide Body */}
-                <div className="flex-1 my-6 overflow-y-auto space-y-3">
-                  {currentSlide.paragraphs.length > 0 ? (
-                    currentSlide.paragraphs.map((p, idx) => (
-                      <div key={idx} className="flex items-start gap-3 text-slate-200 text-sm md:text-base leading-relaxed">
-                        <span className="text-amber-400 text-lg leading-none select-none">•</span>
-                        <span>{p}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-slate-500 italic text-sm">No text content on this slide.</p>
-                  )}
-                </div>
-
-                {/* Slide Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-800 text-[11px] text-slate-500 font-mono">
-                  <span>KaiStu Presentation Mode</span>
-                  <span>Slide {currentSlide.slideNumber}</span>
-                </div>
-              </div>
-
-              {/* Bottom Slide Navigation Bar */}
-              <div className="flex items-center gap-4 mt-6 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 shadow-lg">
-                <button
-                  onClick={() => setCurrentSlideIndex((i) => Math.max(0, i - 1))}
-                  disabled={currentSlideIndex === 0}
-                  className="p-1.5 rounded hover:bg-slate-800 text-slate-300 disabled:opacity-30 disabled:pointer-events-none transition"
-                  title="Previous slide (Left Arrow)"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                <span className="text-xs font-mono text-slate-300">
-                  {currentSlideIndex + 1} / {slides.length}
-                </span>
-
-                <button
-                  onClick={() => setCurrentSlideIndex((i) => Math.min(slides.length - 1, i + 1))}
-                  disabled={currentSlideIndex === slides.length - 1}
-                  className="p-1.5 rounded hover:bg-slate-800 text-slate-300 disabled:opacity-30 disabled:pointer-events-none transition"
-                  title="Next slide (Right Arrow)"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+              <div className="py-6 text-center text-xs text-slate-500 font-mono">
+                — End of presentation ({slides.length} slides) —
               </div>
             </div>
           </>

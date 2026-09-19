@@ -4,8 +4,8 @@
   "description": "All-in-one personal study companion with PDF reader, YouTube player, and notes",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#4f46e5",
+  "background_color": "#07090e",
+  "theme_color": "#07090e",
   "icons": [
     {
       "src": "/favicon.svg",

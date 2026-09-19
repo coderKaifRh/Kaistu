@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #07090e;
+    color: #f1f5f9;
+    letter-spacing: -0.011em;
+  }
+
+  code, pre, kbd {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Glassmorphism & Surface Tokens */
+.glass-panel {
+  background: rgba(13, 17, 26, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+}
+
+.glass-card {
+  background: rgba(14, 19, 29, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04), 0 4px 20px 0 rgba(0, 0, 0, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: rgba(18, 25, 38, 0.85);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 12px 28px -6px rgba(0, 0, 0, 0.45);
+  transform: translateY(-1.5px);
+}
+
+/* Soundwave Equalizer Animation */
+@keyframes soundwave-1 {
+  0%, 100% { height: 4px; }
+  50% { height: 14px; }
+}
+@keyframes soundwave-2 {
+  0%, 100% { height: 14px; }
+  50% { height: 6px; }
+}
+@keyframes soundwave-3 {
+  0%, 100% { height: 6px; }
+  50% { height: 16px; }
+}
+
+.animate-wave-1 {
+  animation: soundwave-1 0.8s ease-in-out infinite;
+}
+.animate-wave-2 {
+  animation: soundwave-2 0.7s ease-in-out infinite 0.15s;
+}
+.animate-wave-3 {
+  animation: soundwave-3 0.9s ease-in-out infinite 0.3s;
+}
+
+/* Custom modern scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.22);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+

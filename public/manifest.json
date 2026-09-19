@@ -1,0 +1,17 @@
+{
+  "name": "KaiStu - Personal Study Workstation",
+  "short_name": "KaiStu",
+  "description": "All-in-one personal study companion with PDF reader, YouTube player, and notes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -19,6 +19,7 @@ export const App: React.FC = () => {
   // Modals
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<StudyItem | null>(null);
   const [isAiHubOpen, setIsAiHubOpen] = useState(false);
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -100,10 +101,14 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleItemAdded = async (newItem: StudyItem) => {
-    setItems((prev) => [newItem, ...prev]);
-    // Automatically open the newly added material in the Workstation with history support!
-    openItemInWorkstation(newItem);
+  const handleItemSaved = async (savedItem: StudyItem) => {
+    if (editingItem) {
+      await handleUpdateItem(savedItem);
+    } else {
+      setItems((prev) => [savedItem, ...prev]);
+      openItemInWorkstation(savedItem);
+    }
+    setEditingItem(null);
   };
 
   const handleOpenAiAssist = (contextPrompt: string) => {
@@ -156,7 +161,15 @@ export const App: React.FC = () => {
           onUpdateItem={handleUpdateItem}
           onSelectItem={(it) => openItemInWorkstation(it)}
           onOpenAiAssist={handleOpenAiAssist}
-          onAddNewMaterial={() => setIsAddItemModalOpen(true)}
+          onAddNewMaterial={() => {
+            setEditingItem(null);
+            setIsAddItemModalOpen(true);
+          }}
+          onEditItem={(it) => {
+            setEditingItem(it);
+            setIsAddItemModalOpen(true);
+          }}
+          onDeleteItem={handleDeleteItem}
         />
       ) : (
         /* Standard Dashboard Layout with Sidebar & Subject Details */
@@ -203,8 +216,15 @@ export const App: React.FC = () => {
                 items={subjectItems}
                 onBack={() => {}}
                 onSelectItem={(item) => openItemInWorkstation(item)}
-                onAddNewMaterial={() => setIsAddItemModalOpen(true)}
+                onAddNewMaterial={() => {
+                  setEditingItem(null);
+                  setIsAddItemModalOpen(true);
+                }}
                 onDeleteItem={handleDeleteItem}
+                onEditItem={(it) => {
+                  setEditingItem(it);
+                  setIsAddItemModalOpen(true);
+                }}
                 onOpenAiAssist={handleOpenAiAssist}
                 onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
               />
@@ -236,9 +256,14 @@ export const App: React.FC = () => {
       {selectedSubjectId && (
         <AddItemModal
           isOpen={isAddItemModalOpen}
-          onClose={() => setIsAddItemModalOpen(false)}
+          onClose={() => {
+            setIsAddItemModalOpen(false);
+            setEditingItem(null);
+          }}
           subjectId={selectedSubjectId}
-          onItemAdded={handleItemAdded}
+          onItemAdded={handleItemSaved}
+          initialItem={editingItem}
+          onDeleteItem={handleDeleteItem}
         />
       )}
 

@@ -12,6 +12,7 @@ import {
   Sparkles,
   BookOpen,
   Menu,
+  Pencil,
 } from 'lucide-react';
 
 interface SubjectDetailViewProps {
@@ -21,6 +22,7 @@ interface SubjectDetailViewProps {
   onSelectItem: (item: StudyItem) => void;
   onAddNewMaterial: () => void;
   onDeleteItem: (id: string) => void;
+  onEditItem: (item: StudyItem) => void;
   onOpenAiAssist: (contextPrompt: string) => void;
   onToggleMobileSidebar?: () => void;
 }
@@ -32,6 +34,7 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
   onSelectItem,
   onAddNewMaterial,
   onDeleteItem,
+  onEditItem,
   onOpenAiAssist,
   onToggleMobileSidebar,
 }) => {
@@ -228,18 +231,30 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
                     </div>
                     {getTypeBadge(item.type)}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm(`Delete "${item.title}"?`)) {
-                        onDeleteItem(item.id);
-                      }
-                    }}
-                    className="p-1 text-slate-500 hover:text-rose-400 hover:bg-white/[0.08] rounded-lg opacity-0 group-hover:opacity-100 transition"
-                    title="Delete item"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditItem(item);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-white/[0.08] rounded-lg transition"
+                      title="Edit material (rename, change link, update tags)"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
+                          onDeleteItem(item.id);
+                        }
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-white/[0.08] rounded-lg transition"
+                      title="Delete material"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors line-clamp-2 leading-snug tracking-tight">

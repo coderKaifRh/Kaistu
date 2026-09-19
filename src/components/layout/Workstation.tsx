@@ -27,6 +27,8 @@ import {
   Share2,
   SlidersHorizontal,
   ChevronDown,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 
 interface WorkstationProps {
@@ -38,6 +40,8 @@ interface WorkstationProps {
   onSelectItem: (item: StudyItem) => void;
   onOpenAiAssist: (contextPrompt: string) => void;
   onAddNewMaterial: () => void;
+  onDeleteItem?: (id: string) => void;
+  onEditItem?: (item: StudyItem) => void;
 }
 
 export const Workstation: React.FC<WorkstationProps> = ({
@@ -49,6 +53,8 @@ export const Workstation: React.FC<WorkstationProps> = ({
   onSelectItem,
   onOpenAiAssist,
   onAddNewMaterial,
+  onDeleteItem,
+  onEditItem,
 }) => {
   // Split screen mode: 'none' | 'notes'
   const [splitMode, setSplitMode] = useState<'none' | 'notes'>('notes');
@@ -300,9 +306,36 @@ export const Workstation: React.FC<WorkstationProps> = ({
               {subject.name}
             </span>
             <span className="text-slate-600 hidden lg:inline text-xs">/</span>
-            <div className="flex items-center gap-1.5 font-semibold text-xs text-white truncate max-w-[130px] sm:max-w-[200px] md:max-w-[260px]">
+            <div className="flex items-center gap-1.5 font-semibold text-xs text-white truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
               {getItemIcon(item.type)}
               <span className="truncate">{item.title}</span>
+            </div>
+
+            {/* Quick Edit and Delete buttons */}
+            <div className="flex items-center gap-0.5 shrink-0">
+              {onEditItem && (
+                <button
+                  onClick={() => onEditItem(item)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-white/[0.08] transition"
+                  title="Edit this material (rename, link, tags)"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {onDeleteItem && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
+                      onDeleteItem(item.id);
+                      onBack();
+                    }
+                  }}
+                  className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-white/[0.08] transition"
+                  title="Delete this material"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>

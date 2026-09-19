@@ -5,7 +5,6 @@ import { YouTubeViewer } from '../viewers/YouTubeViewer';
 import { DocxViewer } from '../viewers/DocxViewer';
 import { PptxViewer } from '../viewers/PptxViewer';
 import { NoteEditor } from '../notes/NoteEditor';
-import { AiChatPane } from '../ai/AiChatPane';
 import { FlashcardDeck } from '../flashcards/FlashcardDeck';
 import { ExamSimulator } from '../quiz/ExamSimulator';
 import { AmbientPlayer } from '../audio/AmbientPlayer';
@@ -19,7 +18,6 @@ import {
   Edit3,
   Presentation,
   Plus,
-  Bot,
   X,
   Maximize2,
   GripVertical,
@@ -52,18 +50,33 @@ export const Workstation: React.FC<WorkstationProps> = ({
   onOpenAiAssist,
   onAddNewMaterial,
 }) => {
-  // Split screen mode: 'none' | 'notes' | 'ai'
-  const [splitMode, setSplitMode] = useState<'none' | 'notes' | 'ai'>('none');
+  // Split screen mode: 'none' | 'notes'
+  const [splitMode, setSplitMode] = useState<'none' | 'notes'>('notes');
   const [splitSecondaryNote, setSplitSecondaryNote] = useState<StudyItem | null>(null);
   const [showFlashcards, setShowFlashcards] = useState(false);
   const [showExamQuiz, setShowExamQuiz] = useState(false);
   const [isRatioPopoverOpen, setIsRatioPopoverOpen] = useState(false);
+
+  // Mobile detection and mobile tab switcher ('material' | 'notes')
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  const [mobileTab, setMobileTab] = useState<'material' | 'notes'>('material');
 
   // Dynamic split percentage (default to 65% for balanced maximum video + spacious notes)
   const [splitPercent, setSplitPercent] = useState<number>(65);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Listen to window resize for responsive mode
+  useEffect(() => {
+    const handleWinResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleWinResize);
+    return () => window.removeEventListener('resize', handleWinResize);
+  }, []);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -90,7 +103,7 @@ export const Workstation: React.FC<WorkstationProps> = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (e) {
+    } catch {
       alert('Failed to export bundle.');
     }
   };
@@ -99,59 +112,54 @@ export const Workstation: React.FC<WorkstationProps> = ({
   const calculateOptimalVideoPercent = () => {
     if (!containerRef.current) return 65;
     const rect = containerRef.current.getBoundingClientRect();
-    // Available height for video player (excluding top toolbar ~36px)
     const availableHeight = rect.height - 36;
     if (availableHeight <= 0) return 65;
-    // 16:9 ideal width so video touches top, bottom, left, right without black bars
     const optimal16by9Width = Math.floor(availableHeight * (16 / 9));
     let percent = Math.round((optimal16by9Width / rect.width) * 100);
-    // Give at least 25% to notes and limit video to 75% max
     if (percent > 75) percent = 75;
     if (percent < 45) percent = 45;
     return percent;
   };
 
-  // Automatically activate split with notes and auto-fit on load
+  // Automatically setup notes companion on load
   useEffect(() => {
+    const existingNote = allItems.find((i) => i.type === 'note' && i.id !== item.id);
+    if (existingNote) {
+      setSplitSecondaryNote(existingNote);
+    } else {
+      const scratchpad: StudyItem = {
+        id: 'note-auto-' + item.id,
+        subjectId: subject.id,
+        title: `Notes: ${item.title.slice(0, 24)}`,
+        type: 'note',
+        noteContent: `# 📝 Lecture Notes: ${item.title}\n\n- Key Principle:\n- Important Formula:\n- Summary Takeaway:\n`,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      setSplitSecondaryNote(scratchpad);
+    }
+
     if (item.type === 'youtube') {
       setSplitMode('notes');
-      // Calculate optimal ratio so video is maximized and notes fill all remaining screen space
       const timer = setTimeout(() => {
         const optimal = calculateOptimalVideoPercent();
         setSplitPercent(optimal);
       }, 150);
-
-      const existingNote = allItems.find((i) => i.type === 'note' && i.id !== item.id);
-      if (existingNote) {
-        setSplitSecondaryNote(existingNote);
-      } else {
-        const scratchpad: StudyItem = {
-          id: 'note-yt-' + item.id,
-          subjectId: subject.id,
-          title: `Notes: ${item.title.slice(0, 26)}`,
-          type: 'note',
-          noteContent: `# 📝 Lecture Notes: ${item.title}\n\n- Key Concept:\n- Important Formula:\n- Summary:\n`,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        setSplitSecondaryNote(scratchpad);
-      }
-
       return () => clearTimeout(timer);
     }
   }, [item.id, item.type]);
 
-  // Window resize listener to keep optimal zero-waste proportions
+  // Window resize listener to keep optimal zero-waste proportions on desktop
   useEffect(() => {
     const handleResize = () => {
-      if (item.type === 'youtube' && splitMode !== 'none') {
+      if (item.type === 'youtube' && splitMode !== 'none' && !isMobile) {
         const optimal = calculateOptimalVideoPercent();
         setSplitPercent(optimal);
       }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [item.type, splitMode]);
+  }, [item.type, splitMode, isMobile]);
 
   // Mouse drag handler for custom divider resizing
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -166,7 +174,6 @@ export const Workstation: React.FC<WorkstationProps> = ({
       const offsetX = e.clientX - rect.left;
       const totalWidth = rect.width;
       let newPercent = Math.round((offsetX / totalWidth) * 100);
-      // Clamp between 20% and 82% to always ensure readable note space
       if (newPercent < 20) newPercent = 20;
       if (newPercent > 82) newPercent = 82;
       setSplitPercent(newPercent);
@@ -182,7 +189,6 @@ export const Workstation: React.FC<WorkstationProps> = ({
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     }
-
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
@@ -214,14 +220,6 @@ export const Workstation: React.FC<WorkstationProps> = ({
     }
   };
 
-  const toggleSplitAi = () => {
-    if (splitMode === 'ai') {
-      setSplitMode('none');
-    } else {
-      setSplitMode('ai');
-    }
-  };
-
   const renderItemViewer = (targetItem: StudyItem, isSplitPane = false) => {
     switch (targetItem.type) {
       case 'youtube':
@@ -242,10 +240,9 @@ export const Workstation: React.FC<WorkstationProps> = ({
         return (
           <NoteEditor
             item={targetItem}
-            defaultViewMode="edit"
             onUpdateItem={(upd) => {
               onUpdateItem(upd);
-              if (isSplitPane && splitSecondaryNote?.id === upd.id) {
+              if (isSplitPane) {
                 setSplitSecondaryNote(upd);
               }
             }}
@@ -283,9 +280,9 @@ export const Workstation: React.FC<WorkstationProps> = ({
       )}
 
       {/* Top Workstation Navigation Bar */}
-      <header className="flex items-center justify-between px-3.5 py-2 bg-[#090c13] border-b border-white/[0.07] shrink-0 backdrop-blur-xl z-20">
-        {/* Left Zone: Minimalist Back & Breadcrumbs */}
-        <div className="flex items-center gap-2.5 min-w-0">
+      <header className="flex items-center justify-between px-3 py-2 bg-[#090c13] border-b border-white/[0.07] shrink-0 backdrop-blur-xl z-20 gap-2">
+        {/* Left Zone: Back & Breadcrumbs */}
+        <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={onBack}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] transition shrink-0"
@@ -294,67 +291,81 @@ export const Workstation: React.FC<WorkstationProps> = ({
             <ArrowLeft className="w-4 h-4" />
           </button>
 
-          <div className="h-4 w-[1px] bg-white/[0.08] shrink-0" />
+          <div className="h-4 w-[1px] bg-white/[0.08] shrink-0 hidden sm:block" />
 
           {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs font-medium text-slate-400 truncate hidden md:inline">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-xs font-medium text-slate-400 truncate hidden lg:inline">
               {subject.name}
             </span>
-            <span className="text-slate-600 hidden md:inline text-xs">/</span>
-            <div className="flex items-center gap-1.5 font-semibold text-xs sm:text-sm text-white truncate max-w-[200px] sm:max-w-[320px]">
+            <span className="text-slate-600 hidden lg:inline text-xs">/</span>
+            <div className="flex items-center gap-1.5 font-semibold text-xs text-white truncate max-w-[130px] sm:max-w-[200px] md:max-w-[260px]">
               {getItemIcon(item.type)}
               <span className="truncate">{item.title}</span>
             </div>
           </div>
         </div>
 
-        {/* Center Zone: Segmented Capsule Mode Switcher */}
-        <div className="hidden sm:flex items-center bg-[#0e121a] border border-white/[0.08] p-1 rounded-xl shadow-inner">
-          <button
-            onClick={toggleSplitNotes}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all text-xs font-semibold ${
-              splitMode === 'notes'
-                ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-            }`}
-            title="Split with Notes"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>Notes</span>
-          </button>
+        {/* Center Zone: Desktop Split / Mobile Tabs */}
+        {isMobile ? (
+          <div className="flex items-center bg-[#0e121a] border border-white/[0.08] p-0.5 rounded-xl shadow-inner shrink-0">
+            <button
+              onClick={() => setMobileTab('material')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                mobileTab === 'material'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {getItemIcon(item.type)}
+              <span>Viewer</span>
+            </button>
+            <button
+              onClick={() => setMobileTab('notes')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                mobileTab === 'notes'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Notes</span>
+            </button>
+          </div>
+        ) : (
+          <div className="hidden sm:flex items-center bg-[#0e121a] border border-white/[0.08] p-1 rounded-xl shadow-inner">
+            <button
+              onClick={toggleSplitNotes}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all text-xs font-semibold ${
+                splitMode === 'notes'
+                  ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+              }`}
+              title="Split with Notes"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Notes Split</span>
+            </button>
 
-          <button
-            onClick={toggleSplitAi}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all text-xs font-semibold ${
-              splitMode === 'ai'
-                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-400/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-            }`}
-            title="Split with AI Tutor"
-          >
-            <Bot className="w-3.5 h-3.5" />
-            <span>AI Tutor</span>
-          </button>
+            <button
+              onClick={() => setSplitMode('none')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all text-xs font-semibold ${
+                splitMode === 'none'
+                  ? 'bg-white/[0.12] text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+              }`}
+              title="Single Fullscreen Theater"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Theater</span>
+            </button>
+          </div>
+        )}
 
-          <button
-            onClick={() => setSplitMode('none')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all text-xs font-semibold ${
-              splitMode === 'none'
-                ? 'bg-white/[0.12] text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-            }`}
-            title="Single Viewer Fullscreen"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-            <span>Theater</span>
-          </button>
-        </div>
-
-        {/* Right Zone: Sizing Popover & Tools Dock */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Ratio & Sizing Popover */}
-          {isSplitActive && (
+        {/* Right Zone: Sizing & Tools */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Ratio Popover (Desktop only) */}
+          {!isMobile && isSplitActive && (
             <div className="relative" ref={popoverRef}>
               <button
                 onClick={() => setIsRatioPopoverOpen(!isRatioPopoverOpen)}
@@ -381,25 +392,19 @@ export const Workstation: React.FC<WorkstationProps> = ({
                     </span>
                   </div>
 
-                  {/* Auto-Fit Zero Waste feature */}
-                  <button
-                    onClick={() => {
-                      const opt = calculateOptimalVideoPercent();
-                      setSplitPercent(opt);
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-3 transition-all"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-emerald-400" />
-                      <div className="text-left">
-                        <div className="font-bold">Auto-Fit (Zero Waste)</div>
-                        <div className="text-[10px] text-emerald-400/80 font-normal">Max 16:9 video + full width to notes</div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded font-mono">Auto</span>
-                  </button>
+                  {item.type === 'youtube' && (
+                    <button
+                      onClick={() => {
+                        const optimal = calculateOptimalVideoPercent();
+                        setSplitPercent(optimal);
+                      }}
+                      className="w-full mb-3 flex items-center justify-center gap-1.5 py-2 px-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Auto-Fit (Zero Black Bars)</span>
+                    </button>
+                  )}
 
-                  {/* Presets Grid */}
                   <div className="grid grid-cols-4 gap-1.5 mb-3">
                     {[
                       { label: '65:35', val: 65 },
@@ -408,12 +413,12 @@ export const Workstation: React.FC<WorkstationProps> = ({
                       { label: '75:25', val: 75 },
                     ].map((p) => (
                       <button
-                        key={p.val}
+                        key={p.label}
                         onClick={() => setSplitPercent(p.val)}
-                        className={`py-1.5 px-2 rounded-lg text-xs font-mono text-center transition-all ${
+                        className={`py-1 text-center rounded-lg text-xs font-mono transition-all ${
                           splitPercent === p.val
-                            ? 'bg-indigo-600 text-white font-bold shadow-sm'
-                            : 'bg-black/30 hover:bg-white/[0.08] text-slate-300 border border-white/[0.05]'
+                            ? 'bg-indigo-600/30 border border-indigo-500 text-indigo-200 font-bold'
+                            : 'bg-white/[0.04] text-slate-400 hover:text-white border border-white/[0.06]'
                         }`}
                       >
                         {p.label}
@@ -421,10 +426,9 @@ export const Workstation: React.FC<WorkstationProps> = ({
                     ))}
                   </div>
 
-                  {/* Interactive Slider */}
                   <div>
                     <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                      <span>Video Width</span>
+                      <span>Viewer Width</span>
                       <span className="font-mono">{splitPercent}%</span>
                     </div>
                     <input
@@ -441,135 +445,136 @@ export const Workstation: React.FC<WorkstationProps> = ({
             </div>
           )}
 
-          <div className="h-4 w-[1px] bg-white/[0.08] hidden sm:block shrink-0" />
-
           {/* Tools Group */}
           <div className="flex items-center gap-1 bg-[#0e121a] border border-white/[0.08] p-1 rounded-xl shadow-inner">
-            {/* Ambient Focus Sounds */}
             <AmbientPlayer compact={true} />
 
-            {/* Flashcards Deck Trigger */}
             <button
               onClick={() => setShowFlashcards(true)}
-              className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-2.5 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
+              className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
               title="Spaced Repetition Flashcards"
             >
               <BrainCircuit className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden md:inline">Cards</span>
+              <span className="hidden lg:inline">Cards</span>
             </button>
 
-            {/* Exam Quiz Modal Trigger */}
             <button
               onClick={() => setShowExamQuiz(true)}
-              className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white px-2.5 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
-              title="Practice Exam Simulator"
+              className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
+              title="Practice Exam Quiz"
             >
               <Award className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden md:inline">Quiz</span>
+              <span className="hidden lg:inline">Quiz</span>
             </button>
 
-            {/* Share Subject Bundle (.kaistu) */}
             <button
               onClick={handleExportBundle}
               className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
-              title="Share Course Bundle (.kaistu) with friends"
+              title="Share Course Bundle (.kaistu)"
             >
               <Share2 className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden md:inline">Export</span>
+              <span className="hidden lg:inline">Export</span>
             </button>
           </div>
 
-          {/* Quick AI Hub Launcher */}
+          {/* AI Web Launcher Hub Trigger */}
           <button
             onClick={() =>
               onOpenAiAssist(
-                `I am currently studying "${item.title}" in ${subject.name}. What are the most important principles I need to understand from this material?`
+                `I am studying "${item.title}" in ${subject.name}. What are the foundational principles, key definitions, and high-yield exam takeaways from this material?`
               )
             }
-            className="flex items-center gap-1.5 text-xs bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 px-2.5 py-1.5 rounded-xl font-semibold transition shadow-sm hidden lg:flex"
-            title="Open Full AI Modal"
+            className="flex items-center gap-1.5 text-xs bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 px-2.5 py-1.5 rounded-xl font-semibold transition shadow-sm"
+            title="Open AI Web Launchers (Gemini, ChatGPT, Claude)"
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>AI Tutor</span>
+            <span className="hidden md:inline">AI Web Hub</span>
           </button>
         </div>
       </header>
 
-      {/* Main Workspace Layout: Video fills 16:9, Notes fills the rest with zero wasted space */}
-      <div
-        ref={containerRef}
-        className="flex flex-1 min-h-0 overflow-hidden relative w-full"
-      >
-        {/* Primary Viewer Pane (Left Video: Exact optimal width) */}
-        <div
-          style={{ width: isSplitActive ? `${splitPercent}%` : '100%' }}
-          className="h-full overflow-hidden p-0 sm:p-0.5 min-w-0 transition-none"
-        >
-          {renderItemViewer(item)}
+      {/* Main Workspace Layout */}
+      {isMobile ? (
+        /* Mobile Layout: 100% full-screen responsive tab */
+        <div className="flex-1 min-h-0 overflow-hidden relative w-full">
+          {mobileTab === 'material' ? (
+            <div className="h-full w-full overflow-hidden p-0.5">
+              {renderItemViewer(item)}
+            </div>
+          ) : (
+            <div className="h-full w-full overflow-hidden p-0.5">
+              {splitSecondaryNote && renderItemViewer(splitSecondaryNote, true)}
+            </div>
+          )}
         </div>
-
-        {/* Draggable Resizer Divider Bar */}
-        {isSplitActive && (
+      ) : (
+        /* Desktop / Laptop Layout: Side-by-Side Zero-Waste Split */
+        <div
+          ref={containerRef}
+          className="flex flex-1 min-h-0 overflow-hidden relative w-full"
+        >
+          {/* Primary Viewer Pane */}
           <div
-            onMouseDown={handleMouseDown}
-            className={`w-3.5 -mx-1.5 hover:w-4 hover:-mx-2 cursor-col-resize z-20 flex items-center justify-center group select-none transition-colors shrink-0 ${
-              isDragging ? 'bg-indigo-600/60' : 'bg-transparent hover:bg-indigo-600/30'
-            }`}
-            title="Drag left or right to customize split size freely!"
+            style={{ width: isSplitActive ? `${splitPercent}%` : '100%' }}
+            className="h-full overflow-hidden p-0 sm:p-0.5 min-w-0 transition-none"
           >
-            <div className="w-1.5 h-16 rounded-full bg-slate-700 group-hover:bg-indigo-400 flex items-center justify-center transition-colors shadow-md">
-              <GripVertical className="w-3 h-3 text-slate-400 group-hover:text-white" />
-            </div>
+            {renderItemViewer(item)}
           </div>
-        )}
 
-        {/* Secondary Split Viewer Pane (Right Notes / AI: Takes every single remaining pixel!) */}
-        {isSplitActive && (
-          <div
-            style={{ width: `${100 - splitPercent}%` }}
-            className="h-full border-l border-slate-800 overflow-hidden p-0 sm:p-0.5 flex flex-col min-w-0 transition-none"
-          >
-            {/* Split Header Toolbar */}
-            <div className="flex items-center justify-between px-2.5 py-1 mb-0.5 border-b border-slate-800/80 text-xs shrink-0 bg-slate-900/60 rounded-t-lg">
-              <div className="flex items-center gap-1.5 text-indigo-300 font-semibold truncate">
-                <Columns className="w-3.5 h-3.5" />
-                <span className="truncate">
-                  {splitMode === 'ai'
-                    ? 'In-App AI (GPT • Gemini • Claude)'
-                    : `Notes: ${splitSecondaryNote?.title || 'Lecture Notes'}`}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
-                  {100 - splitPercent}%
-                </span>
-                <button
-                  onClick={() => setSplitMode('none')}
-                  className="p-1 rounded bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
-                  title="Close Companion"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+          {/* Draggable Resizer Divider Bar */}
+          {isSplitActive && (
+            <div
+              onMouseDown={handleMouseDown}
+              className={`w-3.5 -mx-1.5 hover:w-4 hover:-mx-2 cursor-col-resize z-20 flex items-center justify-center group select-none transition-colors shrink-0 ${
+                isDragging ? 'bg-indigo-600/60' : 'bg-transparent hover:bg-indigo-600/30'
+              }`}
+              title="Drag left or right to adjust split ratio"
+            >
+              <div className="w-1.5 h-16 rounded-full bg-slate-700 group-hover:bg-indigo-400 flex items-center justify-center transition-colors shadow-md">
+                <GripVertical className="w-3 h-3 text-slate-400 group-hover:text-white" />
               </div>
             </div>
+          )}
 
-            {/* Split Content Pane */}
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {splitMode === 'ai' ? (
-                <AiChatPane
-                  contextInfo={`Subject: ${subject.name}, Material: ${item.title}`}
-                  isCompact={true}
-                />
-              ) : (
-                splitSecondaryNote && renderItemViewer(splitSecondaryNote, true)
-              )}
+          {/* Secondary Split Viewer Pane (Notes) */}
+          {isSplitActive && (
+            <div
+              style={{ width: `${100 - splitPercent}%` }}
+              className="h-full border-l border-slate-800 overflow-hidden p-0 sm:p-0.5 flex flex-col min-w-0 transition-none"
+            >
+              {/* Split Header Toolbar */}
+              <div className="flex items-center justify-between px-2.5 py-1 mb-0.5 border-b border-slate-800/80 text-xs shrink-0 bg-slate-900/60 rounded-t-lg">
+                <div className="flex items-center gap-1.5 text-indigo-300 font-semibold truncate">
+                  <Columns className="w-3.5 h-3.5" />
+                  <span className="truncate">
+                    {`Notes: ${splitSecondaryNote?.title || 'Lecture Notes'}`}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                    {100 - splitPercent}%
+                  </span>
+                  <button
+                    onClick={() => setSplitMode('none')}
+                    className="p-1 rounded bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+                    title="Close Split Notes"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Split Content Pane */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                {splitSecondaryNote && renderItemViewer(splitSecondaryNote, true)}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* Bottom Material Quick Switcher Bar (Only visible when split is inactive to preserve screen height) */}
+      {/* Bottom Material Quick Switcher Bar */}
       {!isSplitActive && otherItems.length > 0 && (
         <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-950 border-t border-slate-800/80 overflow-x-auto text-xs shrink-0">
           <span className="text-slate-500 font-semibold text-[10px] uppercase tracking-wider shrink-0">

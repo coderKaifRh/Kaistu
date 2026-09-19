@@ -9,9 +9,9 @@ import {
   Search,
   Trash2,
   Clock,
-  ArrowLeft,
   Sparkles,
   BookOpen,
+  Menu,
 } from 'lucide-react';
 
 interface SubjectDetailViewProps {
@@ -22,16 +22,18 @@ interface SubjectDetailViewProps {
   onAddNewMaterial: () => void;
   onDeleteItem: (id: string) => void;
   onOpenAiAssist: (contextPrompt: string) => void;
+  onToggleMobileSidebar?: () => void;
 }
 
 export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
   subject,
   items,
-  onBack,
+  onBack: _onBack,
   onSelectItem,
   onAddNewMaterial,
   onDeleteItem,
   onOpenAiAssist,
+  onToggleMobileSidebar,
 }) => {
   const [filterType, setFilterType] = useState<ContentType | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,14 +100,16 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
     <div className="flex-1 flex flex-col h-full overflow-y-auto bg-[#07090e] p-5 sm:p-7 md:p-9">
       {/* Top Breadcrumb & Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
-        <div className="flex items-center gap-3.5">
-          <button
-            onClick={onBack}
-            className="p-2 rounded-xl bg-slate-900/80 border border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.08] transition shadow-sm md:hidden"
-            title="Back to All Subjects"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-3">
+          {onToggleMobileSidebar && (
+            <button
+              onClick={onToggleMobileSidebar}
+              className="p-2.5 rounded-xl bg-[#0e121a] border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.08] transition shadow-sm md:hidden flex items-center justify-center shrink-0"
+              title="Open Subjects Menu"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+          )}
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
@@ -116,30 +120,31 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
                 {items.length} {items.length === 1 ? 'material' : 'materials'}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">
               {subject.name}
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
           <button
             onClick={() =>
               onOpenAiAssist(
-                `Can you create a customized study syllabus and revision roadmap for "${subject.name}"? List the key modules I should master.`
+                `Can you create a structured revision roadmap and key concepts syllabus for "${subject.name}"? List the high-yield topics I must master for exams.`
               )
             }
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-white/[0.08] text-indigo-300 border border-indigo-500/25 text-xs font-semibold transition shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-white/[0.08] text-indigo-300 border border-indigo-500/25 text-xs font-semibold transition shadow-sm"
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>AI Syllabus Plan</span>
+            <span className="hidden xs:inline">AI Study Plan</span>
+            <span className="xs:hidden">AI Plan</span>
           </button>
 
           <button
             onClick={onAddNewMaterial}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-all"
+            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-all"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
             <span>Add Material</span>
           </button>
         </div>

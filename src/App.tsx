@@ -21,6 +21,7 @@ export const App: React.FC = () => {
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isAiHubOpen, setIsAiHubOpen] = useState(false);
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Load initial data
   const loadData = async () => {
@@ -141,23 +142,41 @@ export const App: React.FC = () => {
         />
       ) : (
         /* Standard Dashboard Layout with Sidebar & Subject Details */
-        <>
-          <Sidebar
-            subjects={subjects}
-            selectedSubjectId={selectedSubjectId}
-            onSelectSubject={(id) => {
-              setSelectedSubjectId(id);
-              setActiveItem(null);
-            }}
-            onAddSubject={() => setIsSubjectModalOpen(true)}
-            onDeleteSubject={handleDeleteSubject}
-            onOpenAiHub={() => {
-              setAiInitialPrompt(undefined);
-              setIsAiHubOpen(true);
-            }}
-            onExportData={handleExportData}
-            itemCountsBySubject={itemCountsBySubject}
-          />
+        <div className="flex w-full h-full relative overflow-hidden">
+          {/* Mobile backdrop for drawer */}
+          {isMobileSidebarOpen && (
+            <div
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+            />
+          )}
+
+          {/* Sidebar Drawer */}
+          <div
+            className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 md:relative md:translate-x-0 ${
+              isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+            }`}
+          >
+            <Sidebar
+              subjects={subjects}
+              selectedSubjectId={selectedSubjectId}
+              onSelectSubject={(id) => {
+                setSelectedSubjectId(id);
+                setActiveItem(null);
+                setIsMobileSidebarOpen(false);
+              }}
+              onAddSubject={() => setIsSubjectModalOpen(true)}
+              onDeleteSubject={handleDeleteSubject}
+              onOpenAiHub={() => {
+                setAiInitialPrompt(undefined);
+                setIsAiHubOpen(true);
+                setIsMobileSidebarOpen(false);
+              }}
+              onExportData={handleExportData}
+              itemCountsBySubject={itemCountsBySubject}
+              onCloseMobile={() => setIsMobileSidebarOpen(false)}
+            />
+          </div>
 
           <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
             {activeSubject ? (
@@ -169,6 +188,7 @@ export const App: React.FC = () => {
                 onAddNewMaterial={() => setIsAddItemModalOpen(true)}
                 onDeleteItem={handleDeleteItem}
                 onOpenAiAssist={handleOpenAiAssist}
+                onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
               />
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
@@ -185,7 +205,7 @@ export const App: React.FC = () => {
               </div>
             )}
           </main>
-        </>
+        </div>
       )}
 
       {/* Global Modals */}

@@ -14,6 +14,7 @@ import {
   Code2,
   Globe2,
   Upload,
+  X,
 } from 'lucide-react';
 import { PomodoroBar } from '../pomodoro/PomodoroBar';
 import { ExamCountdownWidget } from '../exam/ExamCountdownWidget';
@@ -28,6 +29,7 @@ interface SidebarProps {
   onOpenAiHub: () => void;
   onExportData: () => void;
   itemCountsBySubject: Record<string, number>;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -39,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAiHub,
   onExportData,
   itemCountsBySubject,
+  onCloseMobile,
 }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -73,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className="w-64 sm:w-72 bg-[#090c13] border-r border-white/[0.07] flex flex-col h-full shrink-0 select-none">
+    <aside className="w-72 sm:w-80 md:w-64 lg:w-72 bg-[#090c13] border-r border-white/[0.07] flex flex-col h-full shrink-0 select-none shadow-2xl md:shadow-none">
       {/* App Branding */}
       <div className="px-4 py-3.5 border-b border-white/[0.06] flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -90,6 +93,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <p className="text-[10px] text-slate-400 font-medium tracking-wide">Study Companion</p>
           </div>
         </div>
+
+        {onCloseMobile && (
+          <button
+            onClick={onCloseMobile}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] transition md:hidden"
+            title="Close menu"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Embedded Pomodoro Widget */}

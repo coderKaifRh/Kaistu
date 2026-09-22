@@ -10,10 +10,10 @@ export interface ChatMessage {
 }
 
 const FALLBACK_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.5-flash',
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
 ];
 
 export const GeminiChatService = {
@@ -86,7 +86,10 @@ ${question}`;
 
     // Determine model list starting with the currently saved/resolved model
     const activeModel = GeminiKeyService.getModel();
-    const modelsToTry = [activeModel, ...FALLBACK_MODELS.filter((m) => m !== activeModel)];
+    const modelsToTry = [
+      activeModel,
+      ...FALLBACK_MODELS.filter((m) => m !== activeModel),
+    ];
 
     let lastError: Error | null = null;
 
@@ -131,23 +134,35 @@ ${question}`;
           errData.error?.message ||
           `Google Gemini API Error (${response.status}): ${response.statusText}`;
 
-        // If it's a model not found / unsupported error, continue loop to try next model!
+        // If it's a model not found / unsupported / retired error, continue loop to try next model!
         if (
           errMsg.includes('not found') ||
           errMsg.includes('not supported') ||
+          errMsg.includes('no longer available') ||
+          errMsg.includes('deprecated') ||
+          errMsg.includes('retired') ||
           response.status === 404
         ) {
-          console.warn(`Model ${model} not available, trying next fallback...`);
+          console.warn(`Model ${model} not available (${errMsg}), trying next fallback...`);
           lastError = new Error(errMsg);
           continue;
         }
 
-        // Otherwise (quota, invalid key, etc.), fail immediately
+        // If it's another non-quota error, also try next model before giving up
+        if (response.status === 400 && !errMsg.includes('API_KEY_INVALID')) {
+          console.warn(`Model ${model} returned 400 (${errMsg}), trying next fallback...`);
+          lastError = new Error(errMsg);
+          continue;
+        }
+
+        // Otherwise (quota exhausted, invalid key), fail immediately
         throw new Error(errMsg);
       } catch (err: any) {
         if (
           err.message?.includes('not found') ||
-          err.message?.includes('not supported')
+          err.message?.includes('not supported') ||
+          err.message?.includes('no longer available') ||
+          err.message?.includes('deprecated')
         ) {
           lastError = err;
           continue;

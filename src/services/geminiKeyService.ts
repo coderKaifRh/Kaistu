@@ -1,18 +1,18 @@
 /**
  * Gemini API Key Management Service (BYOK - Bring Your Own Key)
  * Safely stores and retrieves the user's free Google Gemini API key in local storage.
- * Resolves active high-speed models: Gemini 2.5 Flash, 2.5 Flash Lite, 2.0 Flash.
+ * Resolves active modern models: Gemini 3.5 Flash Lite, Gemini 3.5 Flash, Gemini 2.5 Flash.
  */
 
 const GEMINI_STORAGE_KEY = 'kaistu_gemini_api_key';
 const GEMINI_MODEL_STORAGE_KEY = 'kaistu_gemini_model';
 
-// Active modern Gemini Flash models (Gemini 1.5 is deprecated)
+// Active modern Gemini Flash models (Gemini 2.0 and 1.5 are retired)
 export const CANDIDATE_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.5-flash',
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
-  'gemini-2.0-flash',
-  'gemini-2.0-flash-lite',
 ];
 
 export const GeminiKeyService = {
@@ -60,19 +60,19 @@ export const GeminiKeyService = {
   },
 
   /**
-   * Get the currently active/resolved model (never allows deprecated 1.5 models)
+   * Get the currently active/resolved model (purges any older models)
    */
   getModel(): string {
     try {
       const model = localStorage.getItem(GEMINI_MODEL_STORAGE_KEY);
-      if (model && !model.includes('1.5') && !model.includes('undefined')) {
+      if (model && CANDIDATE_MODELS.includes(model.trim())) {
         return model.trim();
       }
-      // Purge deprecated model
-      this.saveModel('gemini-2.5-flash');
-      return 'gemini-2.5-flash';
+      // Set to modern gemini-3.5-flash-lite by default
+      this.saveModel('gemini-3.5-flash-lite');
+      return 'gemini-3.5-flash-lite';
     } catch {
-      return 'gemini-2.5-flash';
+      return 'gemini-3.5-flash-lite';
     }
   },
 
@@ -96,7 +96,7 @@ export const GeminiKeyService = {
       return { valid: false, error: 'API key cannot be empty' };
     }
 
-    // Step 1: Probe candidate models directly with generateContent
+    // Step 1: Probe candidate models directly with generateContent (starting with gemini-3.5-flash-lite)
     for (const model of CANDIDATE_MODELS) {
       try {
         const response = await fetch(
@@ -141,7 +141,7 @@ export const GeminiKeyService = {
           };
         }
 
-        console.warn(`Model ${model} returned: ${errMsg}`);
+        console.warn(`Model ${model} probe returned: ${errMsg}`);
       } catch (err: any) {
         console.warn(`Probe failed for model ${model}:`, err);
       }
@@ -159,7 +159,12 @@ export const GeminiKeyService = {
           .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
           .map((m: any) => m.name?.replace('models/', '') || '');
 
-        const chosen = availableModels.find((m) => m.includes('flash')) || availableModels[0];
+        const chosen =
+          availableModels.find((m) => m.includes('3.5-flash-lite')) ||
+          availableModels.find((m) => m.includes('3.5-flash')) ||
+          availableModels.find((m) => m.includes('2.5-flash')) ||
+          availableModels[0];
+
         if (chosen) {
           this.saveModel(chosen);
           return { valid: true, model: chosen };

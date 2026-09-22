@@ -182,6 +182,8 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
         chatHistory: messages,
       });
 
+      setCurrentModel(GeminiKeyService.getModel());
+
       const aiMessage: ChatMessage = {
         id: `msg-${Date.now()}-ai`,
         sender: 'ai',

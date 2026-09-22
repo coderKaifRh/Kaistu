@@ -65,6 +65,9 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
   // Initialize Key and Document Text
   useEffect(() => {
     const savedKey = GeminiKeyService.getKey();
+    const resolvedModel = GeminiKeyService.getModel();
+    setCurrentModel(resolvedModel);
+
     if (savedKey) {
       setApiKey(savedKey);
       setIsKeyConfigured(true);

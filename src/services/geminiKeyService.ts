@@ -1,19 +1,18 @@
 /**
  * Gemini API Key Management Service (BYOK - Bring Your Own Key)
  * Safely stores and retrieves the user's free Google Gemini API key in local storage.
- * Dynamically resolves the best supported model (Gemini 2.5 Flash, 2.0 Flash, 1.5 Flash).
+ * Resolves active high-speed models: Gemini 2.5 Flash, 2.5 Flash Lite, 2.0 Flash.
  */
 
 const GEMINI_STORAGE_KEY = 'kaistu_gemini_api_key';
 const GEMINI_MODEL_STORAGE_KEY = 'kaistu_gemini_model';
 
-// Fallback priority list of high-speed flash models
-const CANDIDATE_MODELS = [
+// Active modern Gemini Flash models (Gemini 1.5 is deprecated)
+export const CANDIDATE_MODELS = [
   'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash-latest',
   'gemini-2.5-flash-lite',
-  'gemini-1.5-flash',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
 ];
 
 export const GeminiKeyService = {
@@ -61,12 +60,17 @@ export const GeminiKeyService = {
   },
 
   /**
-   * Get the currently active/resolved model
+   * Get the currently active/resolved model (never allows deprecated 1.5 models)
    */
   getModel(): string {
     try {
       const model = localStorage.getItem(GEMINI_MODEL_STORAGE_KEY);
-      return model ? model.trim() : 'gemini-2.5-flash';
+      if (model && !model.includes('1.5') && !model.includes('undefined')) {
+        return model.trim();
+      }
+      // Purge deprecated model
+      this.saveModel('gemini-2.5-flash');
+      return 'gemini-2.5-flash';
     } catch {
       return 'gemini-2.5-flash';
     }
@@ -92,44 +96,7 @@ export const GeminiKeyService = {
       return { valid: false, error: 'API key cannot be empty' };
     }
 
-    // Step 1: Try ModelService.ListModels to detect exactly which models this key supports
-    try {
-      const listResp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`
-      );
-
-      if (listResp.ok) {
-        const listData = await listResp.json();
-        const availableModels: string[] = (listData.models || [])
-          .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
-          .map((m: any) => m.name?.replace('models/', '') || '');
-
-        // Find the best match according to candidate priority
-        for (const candidate of CANDIDATE_MODELS) {
-          if (availableModels.includes(candidate)) {
-            this.saveModel(candidate);
-            return { valid: true, model: candidate };
-          }
-        }
-
-        // If specific candidate not found, find any flash model
-        const anyFlash = availableModels.find((m) => m.includes('flash'));
-        if (anyFlash) {
-          this.saveModel(anyFlash);
-          return { valid: true, model: anyFlash };
-        }
-
-        // Otherwise use the first available model that supports generateContent
-        if (availableModels.length > 0) {
-          this.saveModel(availableModels[0]);
-          return { valid: true, model: availableModels[0] };
-        }
-      }
-    } catch (e) {
-      console.warn('ListModels failed, falling back to direct probe:', e);
-    }
-
-    // Step 2: Fallback probe - try candidate models one by one
+    // Step 1: Probe candidate models directly with generateContent
     for (const model of CANDIDATE_MODELS) {
       try {
         const response = await fetch(
@@ -140,7 +107,7 @@ export const GeminiKeyService = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: 'Ping' }] }],
+              contents: [{ parts: [{ text: 'Hello' }] }],
               generationConfig: { maxOutputTokens: 5 },
             }),
           }
@@ -152,18 +119,59 @@ export const GeminiKeyService = {
         }
 
         const errData = await response.json().catch(() => ({}));
-        // If it's an authentication error, don't bother probing other models
-        if (response.status === 400 && errData.error?.message?.includes('API_KEY_INVALID')) {
-          return { valid: false, error: 'API key is invalid. Please check your key from Google AI Studio.' };
+        const errMsg = errData.error?.message || '';
+
+        // If the API key is genuinely invalid (bad key), stop immediately
+        if (response.status === 400 && errMsg.includes('API_KEY_INVALID')) {
+          return {
+            valid: false,
+            error: 'API key not valid. Please copy a fresh key from Google AI Studio.',
+          };
         }
+
+        // If quota limit or rate limit
+        if (
+          response.status === 429 ||
+          errMsg.includes('quota') ||
+          errMsg.includes('RESOURCE_EXHAUSTED')
+        ) {
+          return {
+            valid: false,
+            error: 'Google API quota reached for this key. Please wait a moment or create a new key.',
+          };
+        }
+
+        console.warn(`Model ${model} returned: ${errMsg}`);
       } catch (err: any) {
         console.warn(`Probe failed for model ${model}:`, err);
       }
     }
 
+    // Step 2: Try ModelService.ListModels to detect if any other model is enabled on this project
+    try {
+      const listResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`
+      );
+
+      if (listResp.ok) {
+        const listData = await listResp.json();
+        const availableModels: string[] = (listData.models || [])
+          .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+          .map((m: any) => m.name?.replace('models/', '') || '');
+
+        const chosen = availableModels.find((m) => m.includes('flash')) || availableModels[0];
+        if (chosen) {
+          this.saveModel(chosen);
+          return { valid: true, model: chosen };
+        }
+      }
+    } catch (e) {
+      console.warn('ListModels failed:', e);
+    }
+
     return {
       valid: false,
-      error: 'Unable to connect to Google Gemini with this key. Please check your key or internet connection.',
+      error: 'Unable to connect to Google Gemini with this key. Please check your key from Google AI Studio.',
     };
   },
 };

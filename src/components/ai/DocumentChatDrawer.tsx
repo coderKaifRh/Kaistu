@@ -18,6 +18,8 @@ import {
   ChevronRight,
   Maximize2,
   Minimize2,
+  Bot,
+  User,
 } from 'lucide-react';
 
 interface DocumentChatDrawerProps {
@@ -231,10 +233,10 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
           <button
             key={index}
             onClick={() => onJumpToPage(pageNum)}
-            className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-md bg-purple-500/25 hover:bg-purple-500/40 text-purple-200 border border-purple-500/50 text-[11px] font-mono font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-mono font-semibold transition-all shadow-xs active:scale-95 cursor-pointer"
             title={`Click to jump directly to Page ${pageNum}`}
           >
-            <FileText className="w-3 h-3 text-pink-400" />
+            <FileText className="w-3 h-3 text-emerald-600" />
             <span>Page {pageNum}</span>
           </button>
         );
@@ -247,40 +249,40 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
 
   return (
     <div
-      className={`fixed inset-y-0 right-0 z-50 flex flex-col bg-[#0c0818]/95 border-l border-purple-500/30 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,0,0,0.8)] transition-all duration-300 animate-in slide-in-from-right text-slate-100 ${
+      className={`fixed inset-y-0 right-0 z-50 flex flex-col bg-white border-l border-gray-200 shadow-2xl transition-all duration-300 animate-in slide-in-from-right text-gray-800 font-sans ${
         isExpanded ? 'w-full md:w-[680px]' : 'w-full sm:w-[440px] md:w-[480px]'
       }`}
     >
-      {/* Top Header */}
-      <header className="px-4 py-3.5 border-b border-white/[0.08] bg-[#090614]/80 flex items-center justify-between gap-3 shrink-0">
+      {/* Top Header (ChatGPT Style Clean Light Header) */}
+      <header className="px-4 py-3.5 border-b border-gray-200 bg-white flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 via-fuchsia-600 to-pink-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(168,85,247,0.5)] shrink-0">
-            <Sparkles className="w-4 h-4 text-amber-200" />
+          <div className="w-8 h-8 rounded-full bg-[#10a37f] flex items-center justify-center text-white shadow-sm shrink-0">
+            <Bot className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-xs font-black text-white tracking-tight uppercase">
+              <h2 className="text-xs font-bold text-gray-900 tracking-tight">
                 AI Document Tutor
               </h2>
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
                 {currentModel}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 truncate max-w-[220px]">
+            <p className="text-[11px] text-gray-500 truncate max-w-[220px]">
               {item.title}
             </p>
           </div>
         </div>
 
         {/* Header Action Buttons */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {/* Key settings button */}
           <button
             onClick={() => setShowKeySetup((prev) => !prev)}
             className={`p-1.5 rounded-lg transition text-xs flex items-center gap-1 ${
               showKeySetup || !isKeyConfigured
-                ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40'
-                : 'text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                ? 'bg-gray-100 text-gray-900 border border-gray-300 font-semibold'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
             }`}
             title="Configure Gemini API Key"
           >
@@ -290,7 +292,7 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
           {/* Expand / Shrink */}
           <button
             onClick={() => setIsExpanded((prev) => !prev)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] transition hidden sm:block"
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition hidden sm:block"
             title={isExpanded ? 'Collapse width' : 'Expand width'}
           >
             {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -299,7 +301,7 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
           {/* Close */}
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] transition"
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition"
             title="Close Drawer"
           >
             <X className="w-4 h-4" />
@@ -308,24 +310,24 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
       </header>
 
       {/* Body Area */}
-      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
-        {/* API Key Setup Modal / Slide-down */}
+      <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-white">
+        {/* API Key Setup Modal / Slide-down (Clean Light Card) */}
         {showKeySetup && (
-          <div className="p-4 sm:p-5 bg-gradient-to-b from-[#170e2f] to-[#0d071a] border-b border-purple-500/30 shrink-0 animate-in slide-in-from-top-2 duration-200 shadow-xl">
+          <div className="p-4 sm:p-5 bg-[#f9fafb] border-b border-gray-200 shrink-0 animate-in slide-in-from-top-2 duration-200">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Key className="w-4 h-4 text-purple-400" />
-                  <span>Activate Free AI Tutor</span>
+                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                  <Key className="w-4 h-4 text-emerald-600" />
+                  <span>Connect Free Gemini API Key</span>
                 </h3>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  Use Google's free Gemini API key to chat with any PDF or note. Stored only in your browser (100% private & zero server cost).
+                <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                  Use Google's free Gemini API key to chat with any PDF or note. Stored strictly in your browser (100% private & zero server cost).
                 </p>
               </div>
               {isKeyConfigured && (
                 <button
                   onClick={() => setShowKeySetup(false)}
-                  className="text-slate-400 hover:text-white p-1"
+                  className="text-gray-400 hover:text-gray-600 p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -337,13 +339,13 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
                 href="https://aistudio.google.com/app/apikey"
                 target="_blank"
                 rel="noreferrer"
-                className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-200 text-xs font-semibold transition group shadow-sm"
+                className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 text-xs font-semibold transition group shadow-xs"
               >
                 <div className="flex items-center gap-2">
-                  <ExternalLink className="w-3.5 h-3.5 text-pink-400 group-hover:scale-110 transition-transform" />
+                  <ExternalLink className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
                   <span>Get 100% Free Key from Google AI Studio</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-purple-400" />
+                <ChevronRight className="w-4 h-4 text-gray-400" />
               </a>
 
               <form onSubmit={handleSaveKey} className="space-y-2">
@@ -357,10 +359,10 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
                         ? 'Paste new Gemini API Key to update...'
                         : 'Paste your key here (AIzaSy...)'
                     }
-                    className="w-full px-3.5 py-2.5 bg-[#090614] border border-purple-500/30 focus:border-purple-500 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none transition font-mono"
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-300 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 rounded-xl text-xs text-gray-900 placeholder-gray-400 focus:outline-none transition font-mono shadow-xs"
                   />
                   {keyError && (
-                    <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1 font-medium">
+                    <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1 font-medium">
                       <AlertCircle className="w-3.5 h-3.5" />
                       <span>{keyError}</span>
                     </p>
@@ -371,7 +373,7 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
                   <button
                     type="submit"
                     disabled={isValidatingKey}
-                    className="flex-1 py-2 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition shadow-[0_0_15px_rgba(168,85,247,0.4)] flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 px-4 rounded-xl bg-gray-900 hover:bg-black disabled:opacity-50 text-white text-xs font-semibold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {isValidatingKey ? (
                       <>
@@ -387,7 +389,7 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
                     <button
                       type="button"
                       onClick={handleRemoveKey}
-                      className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition"
+                      className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-600 border border-gray-200 text-xs font-medium transition"
                       title="Delete Key from this device"
                     >
                       Remove
@@ -401,39 +403,39 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
 
         {/* Document Parsing Status Banner */}
         {isExtracting && (
-          <div className="px-4 py-2 bg-purple-500/10 border-b border-purple-500/20 text-[11px] text-purple-300 flex items-center gap-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-400" />
+          <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 text-[11px] text-emerald-800 flex items-center gap-2 font-medium">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
             <span>Indexing document pages for citations...</span>
           </div>
         )}
 
-        {/* Chat Messages Stream */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Chat Messages Stream (Clean Light Canvas) */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-white">
           {messages.length === 0 ? (
-            <div className="py-8 px-2 flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600/30 to-pink-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 mb-3 shadow-[0_0_25px_rgba(168,85,247,0.3)]">
-                <Sparkles className="w-6 h-6 text-pink-400 animate-pulse" />
+            <div className="py-10 px-2 flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-[#10a37f]/10 text-[#10a37f] flex items-center justify-center mb-3">
+                <Sparkles className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-white mb-1">
+              <h3 className="text-base font-semibold text-gray-900 mb-1">
                 Ask Questions About This Material
               </h3>
-              <p className="text-xs text-slate-400 max-w-xs mb-6">
-                Your AI tutor scans this document to give accurate explanations and citations.
+              <p className="text-xs text-gray-500 max-w-xs mb-6 leading-relaxed">
+                Your AI tutor scans this document to give accurate explanations and clickable page citations.
               </p>
 
-              {/* Quick Prompts */}
+              {/* Quick Prompts (ChatGPT Style Light Cards) */}
               <div className="w-full space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400 text-left px-1">
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-left px-1">
                   Suggested Prompts:
                 </p>
                 {QUICK_PROMPTS.map((prompt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(prompt)}
-                    className="w-full text-left p-2.5 rounded-xl bg-purple-500/[0.07] hover:bg-purple-500/20 border border-purple-500/20 text-xs text-slate-200 hover:text-white transition flex items-center justify-between group"
+                    className="w-full text-left p-3 rounded-xl bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 text-xs text-gray-800 transition flex items-center justify-between group shadow-xs cursor-pointer"
                   >
                     <span>{prompt}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-purple-400 group-hover:translate-x-0.5 transition-transform" />
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 ))}
               </div>
@@ -442,76 +444,102 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
             messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                className={`flex gap-3 ${
+                  msg.sender === 'user' ? 'justify-end' : 'justify-start'
+                }`}
               >
-                <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] text-slate-400 font-mono">
-                  {msg.sender === 'user' ? (
-                    <span>You</span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-purple-400 font-bold">
-                      <Sparkles className="w-3 h-3 text-pink-400" />
-                      <span>KaiStu Tutor</span>
-                    </span>
-                  )}
-                  <span>•</span>
-                  <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
+                {/* AI Avatar */}
+                {msg.sender === 'ai' && (
+                  <div className="w-7 h-7 rounded-full bg-[#10a37f] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-xs">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                )}
 
                 <div
-                  className={`p-3.5 rounded-2xl text-xs leading-relaxed max-w-[92%] shadow-md whitespace-pre-wrap ${
-                    msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-br-sm'
-                      : 'bg-[#150d28] border border-purple-500/30 text-slate-200 rounded-bl-sm shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
+                  className={`flex flex-col max-w-[85%] ${
+                    msg.sender === 'user' ? 'items-end' : 'items-start'
                   }`}
                 >
-                  {msg.sender === 'ai' ? (
-                    <div className="space-y-2">
-                      <div className="prose prose-invert prose-xs max-w-none">
-                        {renderFormattedText(msg.text)}
-                      </div>
+                  <div className="flex items-center gap-1.5 mb-1 px-0.5 text-[10px] text-gray-400 font-mono">
+                    <span className="font-semibold text-gray-600">
+                      {msg.sender === 'user' ? 'You' : 'KaiStu Tutor'}
+                    </span>
+                    <span>•</span>
+                    <span>
+                      {new Date(msg.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
 
-                      {/* Clickable Page Citations Banner */}
-                      {msg.citedPages && msg.citedPages.length > 0 && onJumpToPage && (
-                        <div className="pt-2 mt-2 border-t border-white/[0.08] flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] text-slate-400 font-medium">Referenced Pages:</span>
-                          {msg.citedPages.map((pg) => (
-                            <button
-                              key={pg}
-                              onClick={() => onJumpToPage(pg)}
-                              className="px-2 py-0.5 rounded-md bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 border border-purple-500/40 font-mono font-bold text-[10px] transition-all flex items-center gap-1"
-                              title={`Jump to Page ${pg}`}
-                            >
-                              <FileText className="w-3 h-3 text-pink-400" />
-                              <span>Page {pg}</span>
-                            </button>
-                          ))}
+                  {/* Message Bubble */}
+                  <div
+                    className={`p-3.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
+                      msg.sender === 'user'
+                        ? 'bg-[#f4f4f4] text-gray-900 rounded-br-xs border border-gray-200/80 font-normal'
+                        : 'bg-white border border-gray-200/90 text-gray-800 rounded-bl-xs shadow-xs'
+                    }`}
+                  >
+                    {msg.sender === 'ai' ? (
+                      <div className="space-y-2.5">
+                        <div className="text-gray-800 leading-relaxed font-normal">
+                          {renderFormattedText(msg.text)}
                         </div>
-                      )}
+
+                        {/* Clickable Page Citations Banner */}
+                        {msg.citedPages && msg.citedPages.length > 0 && onJumpToPage && (
+                          <div className="pt-2.5 mt-2 border-t border-gray-100 flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] text-gray-500 font-medium">
+                              Referenced Pages:
+                            </span>
+                            {msg.citedPages.map((pg) => (
+                              <button
+                                key={pg}
+                                onClick={() => onJumpToPage(pg)}
+                                className="px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-mono font-semibold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+                                title={`Jump to Page ${pg}`}
+                              >
+                                <FileText className="w-3 h-3 text-emerald-600" />
+                                <span>Page {pg}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span>{msg.text}</span>
+                    )}
+                  </div>
+
+                  {/* Message Actions */}
+                  {msg.sender === 'ai' && (
+                    <div className="flex items-center gap-2 mt-1 px-1">
+                      <button
+                        onClick={() => handleCopyText(msg.id, msg.text)}
+                        className="p-1 text-gray-400 hover:text-gray-700 transition text-[11px] flex items-center gap-1 rounded hover:bg-gray-100"
+                        title="Copy response"
+                      >
+                        {copiedId === msg.id ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span className="text-emerald-600 font-medium">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
                     </div>
-                  ) : (
-                    <span>{msg.text}</span>
                   )}
                 </div>
 
-                {msg.sender === 'ai' && (
-                  <div className="flex items-center gap-2 mt-1 px-1">
-                    <button
-                      onClick={() => handleCopyText(msg.id, msg.text)}
-                      className="p-1 text-slate-500 hover:text-slate-300 transition text-[10px] flex items-center gap-1"
-                      title="Copy response"
-                    >
-                      {copiedId === msg.id ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-400" />
-                          <span className="text-emerald-400 font-bold">Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
+                {/* User Avatar */}
+                {msg.sender === 'user' && (
+                  <div className="w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center text-white shrink-0 mt-0.5 shadow-xs">
+                    <User className="w-4 h-4" />
                   </div>
                 )}
               </div>
@@ -519,23 +547,22 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
           )}
 
           {isLoading && (
-            <div className="flex flex-col items-start">
-              <div className="flex items-center gap-1.5 mb-1 px-1 text-[10px] text-purple-400 font-bold">
-                <Sparkles className="w-3 h-3 text-pink-400 animate-spin" />
-                <span>KaiStu Tutor</span>
+            <div className="flex gap-3 items-start">
+              <div className="w-7 h-7 rounded-full bg-[#10a37f] flex items-center justify-center text-white shrink-0 mt-0.5 shadow-xs">
+                <Bot className="w-4 h-4" />
               </div>
-              <div className="p-3.5 rounded-2xl rounded-bl-sm bg-[#150d28] border border-purple-500/30 text-purple-300 text-xs flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-pink-400" />
-                <span>Reading relevant pages & generating answer...</span>
+              <div className="p-3.5 rounded-2xl rounded-bl-xs bg-gray-50 border border-gray-200 text-gray-600 text-xs flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                <span>Reading relevant pages & generating explanation...</span>
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Bar */}
-        <div className="p-3.5 border-t border-white/[0.08] bg-[#090614]/90 shrink-0">
-          <div className="relative flex items-end gap-2">
+        {/* Input Bar (ChatGPT Signature Rounded Box) */}
+        <div className="p-4 border-t border-gray-200 bg-white shrink-0">
+          <div className="relative flex items-end gap-2 bg-[#f4f4f4] border border-gray-200 focus-within:border-gray-400 focus-within:bg-white rounded-2xl p-2 transition-all shadow-xs">
             <textarea
               ref={inputRef}
               rows={2}
@@ -544,36 +571,37 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
               onKeyDown={handleKeyDown}
               placeholder={
                 isKeyConfigured
-                  ? 'Ask a question about this material (e.g. key theorem or formula)...'
+                  ? 'Message AI Tutor... (Press Enter to send)'
                   : 'Click the Key icon above to activate Gemini API...'
               }
               disabled={!isKeyConfigured || isLoading}
-              className="flex-1 p-2.5 bg-[#120a22] border border-purple-500/30 focus:border-purple-500 rounded-xl text-xs text-white placeholder-slate-500 resize-none focus:outline-none transition leading-relaxed disabled:opacity-50"
+              className="flex-1 p-1 bg-transparent border-0 text-[13px] text-gray-900 placeholder-gray-400 resize-none focus:outline-none transition leading-relaxed disabled:opacity-50"
             />
 
-            <div className="flex flex-col gap-1 shrink-0">
-              <button
-                onClick={() => handleSendMessage()}
-                disabled={!inputText.trim() || !isKeyConfigured || isLoading}
-                className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-40 text-white flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all cursor-pointer"
-                title="Send question (Enter)"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-
+            <div className="flex items-center gap-1 shrink-0 pb-0.5">
               {messages.length > 0 && (
                 <button
                   onClick={() => setMessages([])}
-                  className="w-10 h-6 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition"
+                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-200/60 rounded-lg transition"
                   title="Clear conversation"
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
+
+              <button
+                onClick={() => handleSendMessage()}
+                disabled={!inputText.trim() || !isKeyConfigured || isLoading}
+                className="w-8 h-8 rounded-full bg-gray-900 hover:bg-black disabled:bg-gray-300 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs disabled:cursor-not-allowed"
+                title="Send message (Enter)"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
-          <p className="text-[10px] text-slate-500 mt-1.5 text-center">
-            Powered by Gemini 1.5 Flash • Press <kbd className="font-mono text-slate-400">Enter</kbd> to send
+
+          <p className="text-[11px] text-gray-400 mt-2 text-center">
+            Powered by {currentModel} • Press <kbd className="font-mono bg-gray-100 px-1 py-0.5 rounded border border-gray-200 text-gray-500">Enter</kbd> to send
           </p>
         </div>
       </div>

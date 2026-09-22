@@ -46,6 +46,7 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
   const [keyInput, setKeyInput] = useState<string>('');
   const [keyError, setKeyError] = useState<string | null>(null);
   const [isValidatingKey, setIsValidatingKey] = useState<boolean>(false);
+  const [currentModel, setCurrentModel] = useState<string>(GeminiKeyService.getModel());
 
   // Document Pages
   const [pages, setPages] = useState<ExtractedPage[]>([]);
@@ -127,6 +128,9 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
       setIsKeyConfigured(true);
       setShowKeySetup(false);
       setKeyInput('');
+      if (result.model) {
+        setCurrentModel(result.model);
+      }
     } else {
       setKeyError(result.error || 'Invalid API key. Please check and try again.');
     }
@@ -254,7 +258,7 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
                 AI Document Tutor
               </h2>
               <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                Gemini 1.5 Flash
+                {currentModel}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 truncate max-w-[220px]">

@@ -1,4 +1,5 @@
 import type { ExtractedPage } from './documentTextExtractor';
+import { GeminiKeyService } from './geminiKeyService';
 
 export interface ChatMessage {
   id: string;
@@ -7,6 +8,14 @@ export interface ChatMessage {
   timestamp: number;
   citedPages?: number[];
 }
+
+const FALLBACK_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-latest',
+  'gemini-2.5-flash-lite',
+  'gemini-1.5-flash',
+];
 
 export const GeminiChatService = {
   /**
@@ -76,41 +85,81 @@ ${question}`;
       },
     };
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
-        apiKey.trim()
-      )}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      }
-    );
+    // Determine model list starting with the currently saved/resolved model
+    const activeModel = GeminiKeyService.getModel();
+    const modelsToTry = [activeModel, ...FALLBACK_MODELS.filter((m) => m !== activeModel)];
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      const errMsg =
-        errData.error?.message ||
-        `Google Gemini API Error (${response.status}): ${response.statusText}`;
-      throw new Error(errMsg);
+    let lastError: Error | null = null;
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
+            apiKey.trim()
+          )}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (response.ok) {
+          // Save the working model for future calls
+          GeminiKeyService.saveModel(model);
+
+          const data = await response.json();
+          const answer =
+            data.candidates?.[0]?.content?.parts?.[0]?.text ||
+            'I was unable to generate an answer. Please try rephrasing your question.';
+
+          // Extract all cited page numbers using regex like [Page X] or [page X]
+          const pageMatches = answer.match(/\[page\s*(\d+)\]/gi) || [];
+          const validNums = pageMatches
+            .map((m: string) => {
+              const numMatch = m.match(/\d+/);
+              return numMatch ? parseInt(numMatch[0], 10) : null;
+            })
+            .filter((n: number | null): n is number => n !== null);
+
+          const citedPages: number[] = Array.from(new Set<number>(validNums));
+
+          return { answer, citedPages };
+        }
+
+        const errData = await response.json().catch(() => ({}));
+        const errMsg =
+          errData.error?.message ||
+          `Google Gemini API Error (${response.status}): ${response.statusText}`;
+
+        // If it's a model not found / unsupported error, continue loop to try next model!
+        if (
+          errMsg.includes('not found') ||
+          errMsg.includes('not supported') ||
+          response.status === 404
+        ) {
+          console.warn(`Model ${model} not available, trying next fallback...`);
+          lastError = new Error(errMsg);
+          continue;
+        }
+
+        // Otherwise (quota, invalid key, etc.), fail immediately
+        throw new Error(errMsg);
+      } catch (err: any) {
+        if (
+          err.message?.includes('not found') ||
+          err.message?.includes('not supported')
+        ) {
+          lastError = err;
+          continue;
+        }
+        throw err;
+      }
     }
 
-    const data = await response.json();
-    const answer =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      'I was unable to generate an answer. Please try rephrasing your question.';
-
-    // Extract all cited page numbers using regex like [Page X] or [page X]
-    const pageMatches = answer.match(/\[page\s*(\d+)\]/gi) || [];
-    const validNums = pageMatches
-      .map((m: string) => {
-        const numMatch = m.match(/\d+/);
-        return numMatch ? parseInt(numMatch[0], 10) : null;
-      })
-      .filter((n: number | null): n is number => n !== null);
-
-    const citedPages: number[] = Array.from(new Set<number>(validNums));
-
-    return { answer, citedPages };
+    throw (
+      lastError ||
+      new Error('Failed to generate response across all Gemini model endpoints.')
+    );
   },
 };

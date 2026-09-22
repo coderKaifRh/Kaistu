@@ -9,6 +9,7 @@ import { FlashcardDeck } from '../flashcards/FlashcardDeck';
 import { ExamSimulator } from '../quiz/ExamSimulator';
 import { AmbientPlayer } from '../audio/AmbientPlayer';
 import { StorageService } from '../../services/storage';
+import { DocumentChatDrawer } from '../ai/DocumentChatDrawer';
 import {
   ArrowLeft,
   Columns,
@@ -62,6 +63,18 @@ export const Workstation: React.FC<WorkstationProps> = ({
   const [showFlashcards, setShowFlashcards] = useState(false);
   const [showExamQuiz, setShowExamQuiz] = useState(false);
   const [isRatioPopoverOpen, setIsRatioPopoverOpen] = useState(false);
+  const [isDocChatOpen, setIsDocChatOpen] = useState(false);
+
+  const handleJumpToPage = (pageNum: number) => {
+    const pageEl = document.getElementById(`pdf-page-${pageNum}`);
+    if (pageEl) {
+      pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      pageEl.classList.add('ring-4', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900', 'transition-all');
+      setTimeout(() => {
+        pageEl.classList.remove('ring-4', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900');
+      }, 2500);
+    }
+  };
 
   // Mobile detection and mobile tab switcher ('material' | 'notes')
   const [isMobile, setIsMobile] = useState<boolean>(
@@ -511,6 +524,20 @@ export const Workstation: React.FC<WorkstationProps> = ({
             </button>
           </div>
 
+          {/* Active AI Document Tutor (RAG) Trigger */}
+          <button
+            onClick={() => setIsDocChatOpen((prev) => !prev)}
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-bold transition shadow-sm ${
+              isDocChatOpen
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_0_20px_rgba(217,70,239,0.5)] ring-1 ring-purple-400/50'
+                : 'bg-gradient-to-r from-purple-950/60 to-pink-950/40 hover:from-purple-900/80 hover:to-pink-900/60 text-purple-200 border border-purple-500/40 hover:border-purple-500/70 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+            }`}
+            title="Ask AI questions about this document with page citations"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+            <span>Ask AI</span>
+          </button>
+
           {/* AI Web Launcher Hub Trigger */}
           <button
             onClick={() =>
@@ -653,6 +680,14 @@ export const Workstation: React.FC<WorkstationProps> = ({
           onClose={() => setShowExamQuiz(false)}
         />
       )}
+
+      {/* Active AI Document Chat Assistant Drawer (RAG) */}
+      <DocumentChatDrawer
+        item={item}
+        isOpen={isDocChatOpen}
+        onClose={() => setIsDocChatOpen(false)}
+        onJumpToPage={handleJumpToPage}
+      />
     </div>
   );
 };

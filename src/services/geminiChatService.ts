@@ -26,24 +26,29 @@ export const GeminiChatService = {
     documentTitle: string;
     relevantPages: ExtractedPage[];
     chatHistory?: ChatMessage[];
+    contentType?: string;
   }): Promise<{ answer: string; citedPages: number[] }> {
-    const { apiKey, question, documentTitle, relevantPages, chatHistory = [] } = params;
+    const { apiKey, question, documentTitle, relevantPages, chatHistory = [], contentType } = params;
+
+    const isPresentation = contentType === 'pptx' || contentType === 'ppt';
+    const unitName = isPresentation ? 'slide' : 'page';
+    const unitNameCapital = isPresentation ? 'Slide' : 'Page';
 
     // Build context block from extracted pages
     const contextText =
       relevantPages.length > 0
         ? relevantPages
-            .map((p) => `--- [Page ${p.pageNumber}] ---\n${p.text}`)
+            .map((p) => `--- [${unitNameCapital} ${p.pageNumber}] ---\n${p.text}`)
             .join('\n\n')
         : 'No specific document text available. Answer based on general academic knowledge.';
 
     // Construct system instructions
     const systemPrompt = `You are KaiStu AI Academic Tutor, a brilliant, friendly, and patient personal study coach.
-You are helping the student study the document titled "${documentTitle}".
+You are helping the student study the ${isPresentation ? 'presentation slides' : 'document'} titled "${documentTitle}".
 
 CRITICAL INSTRUCTIONS:
-1. Base your answer primarily on the provided DOCUMENT EXCERPTS below whenever possible.
-2. Whenever you mention or cite facts from a specific page, cite it explicitly like "[Page X]" (e.g. "[Page 5]").
+1. Base your answer primarily on the provided ${isPresentation ? 'SLIDE EXCERPTS' : 'DOCUMENT EXCERPTS'} below whenever possible.
+2. Whenever you mention or cite facts from a specific ${unitName}, cite it explicitly like "[${unitNameCapital} X]" (e.g. "[${unitNameCapital} 5]").
 3. If the user asks in Bengali or Banglish, answer in clear, natural Bengali. If they ask in English, answer in English.
 4. Format your answer beautifully with Markdown, bold headers, bullet points, and LaTeX equations ($...$ or $$...$$) where applicable.
 5. If the exact answer is not in the excerpts, clearly mention that, but still provide an accurate academic explanation to help the student learn.`;
@@ -115,8 +120,8 @@ ${question}`;
             data.candidates?.[0]?.content?.parts?.[0]?.text ||
             'I was unable to generate an answer. Please try rephrasing your question.';
 
-          // Extract all cited page numbers using regex like [Page X] or [page X]
-          const pageMatches = answer.match(/\[page\s*(\d+)\]/gi) || [];
+          // Extract all cited page or slide numbers using regex like [Page X] or [Slide X]
+          const pageMatches = answer.match(/\[(?:page|slide)\s*(\d+)\]/gi) || [];
           const validNums = pageMatches
             .map((m: string) => {
               const numMatch = m.match(/\d+/);

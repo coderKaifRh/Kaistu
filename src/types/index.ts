@@ -1,4 +1,4 @@
-export type ContentType = 'pdf' | 'docx' | 'pptx' | 'youtube' | 'note';
+export type ContentType = 'pdf' | 'docx' | 'pptx' | 'ppt' | 'youtube' | 'note';
 
 export interface Subject {
   id: string;

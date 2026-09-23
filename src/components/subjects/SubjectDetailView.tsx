@@ -109,7 +109,10 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
   );
 
   const filteredItems = currentItems.filter((item) => {
-    const matchesType = filterType === 'all' || item.type === filterType;
+    const matchesType =
+      filterType === 'all' ||
+      item.type === filterType ||
+      (filterType === 'pptx' && (item.type === 'pptx' || item.type === 'ppt'));
     const matchesSearch =
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -125,6 +128,7 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
       case 'docx':
         return <FileText className="w-5 h-5 text-blue-400" />;
       case 'pptx':
+      case 'ppt':
         return <Presentation className="w-5 h-5 text-amber-400" />;
       case 'note':
         return <Edit3 className="w-5 h-5 text-indigo-400" />;
@@ -152,9 +156,10 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
           </span>
         );
       case 'pptx':
+      case 'ppt':
         return (
           <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            PPTX Slide
+            PPT / Slides
           </span>
         );
       case 'note':
@@ -259,7 +264,7 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() =>
               onOpenAiAssist(
@@ -268,11 +273,11 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
                 }"? List the high-yield topics I must master for exams.`
               )
             }
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-white/[0.08] text-indigo-300 border border-indigo-500/25 text-xs font-semibold transition shadow-sm"
+            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-white/[0.08] text-indigo-300 border border-indigo-500/25 text-xs font-semibold transition shadow-sm"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden xs:inline">AI Study Plan</span>
-            <span className="xs:hidden">AI Plan</span>
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="hidden sm:inline">AI Study Plan</span>
+            <span className="sm:hidden">AI Plan</span>
           </button>
 
           <button
@@ -280,18 +285,20 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
               setEditingFolder(null);
               setIsFolderModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-white/[0.08] text-slate-200 hover:text-white border border-white/[0.12] text-xs font-semibold transition shadow-sm"
+            className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-white/[0.08] text-slate-200 hover:text-white border border-white/[0.12] text-xs font-semibold transition shadow-sm"
           >
-            <FolderPlus className="w-4 h-4 text-indigo-400" />
-            <span>New Folder</span>
+            <FolderPlus className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span className="hidden sm:inline">New Folder</span>
+            <span className="sm:hidden">Folder</span>
           </button>
 
           <button
             onClick={() => onAddNewMaterial(currentFolderId)}
-            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-all"
+            className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-all"
           >
-            <Plus className="w-4 h-4" />
-            <span>Add Material</span>
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Add Material</span>
+            <span className="sm:hidden">Material</span>
           </button>
         </div>
       </div>
@@ -316,7 +323,7 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-slate-900/60 border border-white/[0.08] rounded-xl pl-9 pr-14 py-2 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition shadow-inner"
           />
-          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 rounded pointer-events-none">
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 rounded pointer-events-none hidden sm:block">
             ⌘K
           </div>
         </div>
@@ -333,7 +340,17 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
                   : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
               }`}
             >
-              {type === 'all' ? 'All' : type}
+              {type === 'all'
+                ? 'All'
+                : type === 'pptx'
+                ? 'PPT / Slides'
+                : type === 'docx'
+                ? 'Word'
+                : type === 'youtube'
+                ? 'YouTube'
+                : type === 'pdf'
+                ? 'PDF'
+                : 'Notes'}
             </button>
           ))}
         </div>
@@ -448,8 +465,8 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
             {searchQuery
               ? 'No items matched your search query. Try searching for different keywords.'
               : currentFolderId
-              ? 'Add lecture videos, notes, PDFs, or PPTX slides to this folder, or create nested subfolders!'
-              : 'Create Chapter folders or add your study materials directly to build your subject library!'}
+              ? 'Add lecture videos, notes, PDFs, or PPT / PPTX slides to this folder, or create nested subfolders!'
+              : 'Create Chapter folders or add your study materials (PPT slides, PDFs, notes, YouTube) directly to build your subject library!'}
           </p>
           <div className="flex items-center gap-3">
             <button

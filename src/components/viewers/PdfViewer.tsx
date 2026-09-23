@@ -317,39 +317,39 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ item, onOpenAiAssist }) =>
       }`}
     >
       {/* Top PDF Controls Toolbar */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#0c1017] border-b border-white/[0.08] gap-2 flex-wrap sm:flex-nowrap shrink-0 select-none">
+      <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-[#0c1017] border-b border-white/[0.08] gap-1.5 sm:gap-2 shrink-0 select-none overflow-x-auto scrollbar-none">
         {/* Left: Document Info */}
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink">
+          <span className="bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] uppercase font-bold px-1.5 sm:px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
             <FileText className="w-3.5 h-3.5" /> PDF
           </span>
-          <h3 className="text-xs font-semibold text-slate-200 truncate max-w-[140px] sm:max-w-[200px]" title={item.title}>
+          <h3 className="text-xs font-semibold text-slate-200 truncate max-w-[80px] sm:max-w-[200px] hidden sm:block" title={item.title}>
             {item.title}
           </h3>
         </div>
 
         {/* Center: Scroll indicator & Jump + Zoom */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Scroll Page Indicator & Quick Jump */}
           <form
             onSubmit={handlePageInputSubmit}
-            className="flex items-center bg-[#07090e] border border-white/[0.1] rounded-xl px-2 py-1 text-xs"
+            className="flex items-center bg-[#07090e] border border-white/[0.1] rounded-xl px-1.5 sm:px-2 py-1 text-xs"
             title="Type a page number and press Enter to jump"
           >
-            <span className="text-slate-500 text-[11px] mr-1 hidden xs:inline">Page</span>
+            <span className="text-slate-500 text-[11px] mr-1 hidden md:inline">Page</span>
             <input
               type="text"
               value={pageInput}
               onChange={(e) => setPageInput(e.target.value)}
               onBlur={handlePageInputSubmit}
-              className="w-8 text-center bg-transparent font-mono text-white text-xs focus:outline-none focus:bg-white/[0.08] rounded"
+              className="w-7 sm:w-8 text-center bg-transparent font-mono text-white text-xs focus:outline-none focus:bg-white/[0.08] rounded"
             />
             <span className="text-slate-500 text-xs mx-0.5">/</span>
             <span className="text-slate-400 text-xs font-mono">{numPages}</span>
           </form>
 
           {/* Zoom Controls */}
-          <div className="flex items-center bg-[#07090e] border border-white/[0.1] rounded-xl px-1.5 py-1 text-xs">
+          <div className="flex items-center bg-[#07090e] border border-white/[0.1] rounded-xl px-1 sm:px-1.5 py-1 text-xs">
             <button
               onClick={handleZoomOut}
               className="p-1 text-slate-400 hover:text-white rounded transition"
@@ -358,7 +358,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ item, onOpenAiAssist }) =>
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
 
-            <span className="text-[11px] font-mono text-slate-300 px-1 min-w-[38px] text-center">
+            <span className="text-[11px] font-mono text-slate-300 px-0.5 sm:px-1 min-w-[34px] sm:min-w-[38px] text-center">
               {Math.round(scale * 100)}%
             </span>
 
@@ -374,7 +374,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ item, onOpenAiAssist }) =>
           {/* Rotate Button */}
           <button
             onClick={handleRotate}
-            className="p-1.5 bg-[#07090e] border border-white/[0.1] text-slate-400 hover:text-white rounded-xl transition hidden sm:flex items-center justify-center"
+            className="p-1.5 bg-[#07090e] border border-white/[0.1] text-slate-400 hover:text-white rounded-xl transition hidden md:flex items-center justify-center"
             title="Rotate 90 degrees"
           >
             <RotateCw className="w-3.5 h-3.5" />
@@ -382,7 +382,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ item, onOpenAiAssist }) =>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           {onOpenAiAssist && (
             <button
               onClick={() =>
@@ -390,17 +390,17 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ item, onOpenAiAssist }) =>
                   `I am reading page ${activePageNum} of ${numPages} from the PDF document "${item.title}". Can you summarize the core principles, formulas, and definitions from this material?`
                 )
               }
-              className="flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-xl transition font-semibold shadow-sm"
+              className="flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2 sm:px-2.5 py-1.5 rounded-xl transition font-semibold shadow-sm shrink-0"
               title="Ask AI to explain or summarize"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">AI Study</span>
+              <span className="hidden lg:inline">AI Study</span>
             </button>
           )}
 
           <button
             onClick={handleOpenInNewTab}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition shrink-0"
             title="Open in new browser tab"
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -408,7 +408,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ item, onOpenAiAssist }) =>
 
           <button
             onClick={handleDownload}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition shrink-0 hidden sm:flex"
             title="Download PDF"
           >
             <Download className="w-4 h-4" />
@@ -416,7 +416,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ item, onOpenAiAssist }) =>
 
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition shrink-0"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}

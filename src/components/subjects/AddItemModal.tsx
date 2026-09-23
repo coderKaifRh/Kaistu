@@ -60,16 +60,27 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   }, [initialItem, isOpen]);
 
-  if (!isOpen) return null;
+  const processSelectedFile = (selected: File) => {
+    setFile(selected);
+    const ext = selected.name.split('.').pop()?.toLowerCase();
+    if (ext === 'ppt' || ext === 'pps') {
+      setSelectedType('ppt');
+    } else if (ext === 'pptx' || ext === 'ppsx') {
+      setSelectedType('pptx');
+    } else if (ext === 'pdf') {
+      setSelectedType('pdf');
+    } else if (ext === 'docx' || ext === 'doc') {
+      setSelectedType('docx');
+    }
+    if (!title) {
+      const cleanName = selected.name.replace(/\.[^/.]+$/, '');
+      setTitle(cleanName);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      setFile(selected);
-      if (!title) {
-        const cleanName = selected.name.replace(/\.[^/.]+$/, '');
-        setTitle(cleanName);
-      }
+      processSelectedFile(e.target.files[0]);
     }
   };
 
@@ -85,13 +96,23 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         .map((t) => t.trim())
         .filter(Boolean);
 
+      let detectedType = selectedType;
+      if (file) {
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (ext === 'ppt' || ext === 'pps') {
+          detectedType = 'ppt';
+        } else if (ext === 'pptx' || ext === 'ppsx') {
+          detectedType = 'pptx';
+        }
+      }
+
       let itemToSave: StudyItem = {
         ...(initialItem || {}),
         id: itemId,
         subjectId,
         folderId: initialItem ? initialItem.folderId : (folderId || null),
         title: title.trim(),
-        type: selectedType,
+        type: detectedType,
         tags,
         createdAt: initialItem?.createdAt || Date.now(),
         updatedAt: Date.now(),
@@ -126,6 +147,18 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleDelete = () => {
     if (!initialItem || !onDeleteItem) return;
     if (confirm(`Are you sure you want to delete "${initialItem.title}"?`)) {
@@ -134,8 +167,17 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 overflow-y-auto"
+    >
       <div className="bg-[#0b0e14] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07] bg-[#080a0f]">
@@ -152,12 +194,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                   ? 'Update title, links, tags, or file'
                   : folderName
                   ? `Adding to: ${folderName}`
-                  : 'PDF, Word, PPTX, YouTube, or Markdown Note'}
+                  : 'PowerPoint (PPT / PPTX), PDF, Word, YouTube, or Markdown Note'}
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            title="Close modal"
             className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06] transition"
           >
             <X className="w-4 h-4" />
@@ -165,21 +209,21 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         </div>
 
         {/* Type Switcher */}
-        <div className="grid grid-cols-5 gap-1.5 p-3.5 bg-[#080a0f] border-b border-white/[0.06] text-xs">
+        <div className="grid grid-cols-5 gap-1 sm:gap-1.5 p-2.5 sm:p-3.5 bg-[#080a0f] border-b border-white/[0.06] text-xs">
           <button
             type="button"
             onClick={() => {
               setSelectedType('pdf');
               setFile(null);
             }}
-            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-all ${
+            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border transition-all min-h-[46px] ${
               selectedType === 'pdf'
                 ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 font-semibold shadow-sm'
                 : 'border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/[0.03]'
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span className="text-[11px]">PDF</span>
+            <span className="text-[10px] sm:text-[11px] truncate w-full text-center">PDF</span>
           </button>
 
           <button
@@ -188,14 +232,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               setSelectedType('note');
               setFile(null);
             }}
-            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-all ${
+            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border transition-all min-h-[46px] ${
               selectedType === 'note'
                 ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 font-semibold shadow-sm'
                 : 'border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/[0.03]'
             }`}
           >
             <Edit3 className="w-4 h-4" />
-            <span className="text-[11px]">Note</span>
+            <span className="text-[10px] sm:text-[11px] truncate w-full text-center">Note</span>
           </button>
 
           <button
@@ -204,14 +248,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               setSelectedType('youtube');
               setFile(null);
             }}
-            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-all ${
+            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border transition-all min-h-[46px] ${
               selectedType === 'youtube'
                 ? 'bg-red-500/15 border-red-500/40 text-red-300 font-semibold shadow-sm'
                 : 'border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/[0.03]'
             }`}
           >
             <Video className="w-4 h-4" />
-            <span className="text-[11px]">YouTube</span>
+            <span className="text-[10px] sm:text-[11px] truncate w-full text-center">YouTube</span>
           </button>
 
           <button
@@ -220,14 +264,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               setSelectedType('docx');
               setFile(null);
             }}
-            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-all ${
+            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border transition-all min-h-[46px] ${
               selectedType === 'docx'
                 ? 'bg-blue-500/15 border-blue-500/40 text-blue-300 font-semibold shadow-sm'
                 : 'border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/[0.03]'
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span className="text-[11px]">Word</span>
+            <span className="text-[10px] sm:text-[11px] truncate w-full text-center">Word</span>
           </button>
 
           <button
@@ -236,14 +280,17 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               setSelectedType('pptx');
               setFile(null);
             }}
-            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-all ${
+            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border transition-all min-h-[46px] ${
               selectedType === 'pptx'
                 ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-semibold shadow-sm'
                 : 'border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/[0.03]'
             }`}
           >
             <Presentation className="w-4 h-4" />
-            <span className="text-[11px]">PPTX</span>
+            <span className="text-[10px] sm:text-[11px] truncate w-full text-center">
+              <span className="sm:hidden">Slides</span>
+              <span className="hidden sm:inline">PPT / Slides</span>
+            </span>
           </button>
         </div>
 
@@ -286,11 +333,13 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </div>
           )}
 
-          {(selectedType === 'pdf' || selectedType === 'docx' || selectedType === 'pptx') && (
+          {(selectedType === 'pdf' || selectedType === 'docx' || selectedType === 'pptx' || selectedType === 'ppt') && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  {isEditing && !file ? `Current ${selectedType.toUpperCase()} File` : `Upload ${selectedType.toUpperCase()} File *`}
+                  {isEditing && !file
+                    ? `Current ${selectedType === 'pptx' || selectedType === 'ppt' ? 'PPT / Slides' : selectedType.toUpperCase()} File`
+                    : `Upload ${selectedType === 'pptx' || selectedType === 'ppt' ? 'PPT / Slides' : selectedType.toUpperCase()} File *`}
                 </label>
                 {isEditing && initialItem?.fileName && !file && (
                   <span className="text-[10px] text-indigo-400 font-mono">
@@ -299,15 +348,28 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 )}
               </div>
 
-              <div className="relative border border-dashed border-white/15 hover:border-indigo-500/60 rounded-xl p-4 text-center cursor-pointer transition bg-[#07090e]/60 group">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    processSelectedFile(e.dataTransfer.files[0]);
+                  }
+                }}
+                className="relative border border-dashed border-white/15 hover:border-indigo-500/60 rounded-xl p-4 text-center cursor-pointer transition bg-[#07090e]/60 group"
+              >
                 <input
                   type="file"
                   accept={
-                    selectedType === 'pdf'
-                      ? '.pdf,application/pdf'
+                    selectedType === 'pptx' || selectedType === 'ppt'
+                      ? '.ppt,.pptx,.pps,.ppsx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/powerpoint,application/x-mspowerpoint'
                       : selectedType === 'docx'
-                      ? '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                      : '.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation'
+                      ? '.docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword'
+                      : '.pdf,.ppt,.pptx,.pps,.ppsx,.docx,.doc,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation'
                   }
                   onChange={handleFileChange}
                   required={!isEditing && !file}
@@ -334,9 +396,13 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                       <UploadCloud className="w-4 h-4" />
                     </div>
                     <p className="text-xs font-medium text-slate-300">
-                      Click to choose or drag & drop {selectedType.toUpperCase()}
+                      Click to choose or drag & drop {selectedType === 'pptx' || selectedType === 'ppt' ? 'PowerPoint (.ppt, .pptx)' : selectedType.toUpperCase()}
                     </p>
-                    <span className="text-[10px] text-slate-500">Stored safely on local disk</span>
+                    <span className="text-[10px] text-slate-500">
+                      {selectedType === 'pptx' || selectedType === 'ppt'
+                        ? 'Slides & speaker notes indexed for AI Tutor study'
+                        : 'Stored safely on local disk'}
+                    </span>
                   </div>
                 )}
               </div>

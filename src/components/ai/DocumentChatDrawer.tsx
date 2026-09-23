@@ -20,6 +20,7 @@ import {
   Minimize2,
   Bot,
   User,
+  Presentation,
 } from 'lucide-react';
 
 interface DocumentChatDrawerProps {
@@ -27,13 +28,21 @@ interface DocumentChatDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onJumpToPage?: (pageNumber: number) => void;
+  initialPrompt?: string;
 }
 
-const QUICK_PROMPTS = [
+const DEFAULT_QUICK_PROMPTS = [
   'Summarize this document in 5 high-yield exam takeaways',
   'What are the core formulas and fundamental definitions here?',
   'Generate 5 practice questions with answers from this material',
   'Explain the main concept in simple terms for a beginner',
+];
+
+const PPT_QUICK_PROMPTS = [
+  'Summarize all slides in 5 high-yield exam takeaways',
+  'What are the core concepts, formulas & definitions in these slides?',
+  'Generate 5 practice exam questions with answers from these slides',
+  'Explain the key takeaways simply with intuitive analogies',
 ];
 
 export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
@@ -41,7 +50,9 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
   isOpen,
   onClose,
   onJumpToPage,
+  initialPrompt,
 }) => {
+  const isPresentation = item.type === 'pptx' || item.type === 'ppt';
   const [apiKey, setApiKey] = useState<string>('');
   const [isKeyConfigured, setIsKeyConfigured] = useState<boolean>(false);
   const [showKeySetup, setShowKeySetup] = useState<boolean>(false);
@@ -106,6 +117,16 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
       active = false;
     };
   }, [isOpen, item]);
+
+  // Handle initial prompt passed to drawer
+  useEffect(() => {
+    if (initialPrompt && isOpen) {
+      setInputText(initialPrompt);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [initialPrompt, isOpen]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -182,6 +203,7 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
         documentTitle: item.title,
         relevantPages: relevant,
         chatHistory: messages,
+        contentType: item.type,
       });
 
       setCurrentModel(GeminiKeyService.getModel());
@@ -222,22 +244,31 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
   };
 
   const renderFormattedText = (text: string) => {
-    // Replace [Page X] tags with interactive clickable buttons
-    const parts = text.split(/(\[page\s*\d+\])/gi);
+    // Replace [Page X] or [Slide X] tags with interactive clickable buttons
+    const parts = text.split(/(\[(?:page|slide)\s*\d+\])/gi);
 
     return parts.map((part, index) => {
-      const match = part.match(/\[page\s*(\d+)\]/i);
+      const match = part.match(/\[(page|slide)\s*(\d+)\]/i);
       if (match && onJumpToPage) {
-        const pageNum = parseInt(match[1], 10);
+        const isSlide = match[1].toLowerCase() === 'slide' || isPresentation;
+        const pageNum = parseInt(match[2], 10);
         return (
           <button
             key={index}
             onClick={() => onJumpToPage(pageNum)}
-            className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-mono font-semibold transition-all shadow-xs active:scale-95 cursor-pointer"
-            title={`Click to jump directly to Page ${pageNum}`}
+            className={`inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold transition-all shadow-xs active:scale-95 cursor-pointer ${
+              isSlide
+                ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
+            }`}
+            title={`Click to jump directly to ${isSlide ? 'Slide' : 'Page'} ${pageNum}`}
           >
-            <FileText className="w-3 h-3 text-emerald-600" />
-            <span>Page {pageNum}</span>
+            {isSlide ? (
+              <Presentation className="w-3 h-3 text-amber-600" />
+            ) : (
+              <FileText className="w-3 h-3 text-emerald-600" />
+            )}
+            <span>{isSlide ? `Slide ${pageNum}` : `Page ${pageNum}`}</span>
           </button>
         );
       }
@@ -402,12 +433,30 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
         )}
 
         {/* Document Parsing Status Banner */}
-        {isExtracting && (
+        {isExtracting ? (
           <div className="px-4 py-2 bg-emerald-50 border-b border-emerald-100 text-[11px] text-emerald-800 flex items-center gap-2 font-medium">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-            <span>Indexing document pages for citations...</span>
+            <span>
+              {isPresentation
+                ? 'Indexing PowerPoint presentation slides & notes...'
+                : 'Indexing document pages for citations...'}
+            </span>
           </div>
-        )}
+        ) : pages.length > 0 ? (
+          <div className="px-4 py-1.5 bg-slate-50 border-b border-slate-100 text-[10px] text-slate-500 flex items-center justify-between font-mono">
+            <span className="flex items-center gap-1.5 font-medium">
+              {isPresentation ? (
+                <Presentation className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+              )}
+              <span className={isPresentation ? 'text-amber-700' : 'text-emerald-700'}>
+                {pages.length} {isPresentation ? 'Slides Indexed' : 'Pages Indexed'}
+              </span>
+            </span>
+            <span className="text-slate-400">RAG Semantic Search Ready</span>
+          </div>
+        ) : null}
 
         {/* Chat Messages Stream (Clean Light Canvas) */}
         <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-white">
@@ -417,10 +466,12 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
                 <Sparkles className="w-6 h-6" />
               </div>
               <h3 className="text-base font-semibold text-gray-900 mb-1">
-                Ask Questions About This Material
+                {isPresentation ? 'Ask Questions About These Slides' : 'Ask Questions About This Material'}
               </h3>
               <p className="text-xs text-gray-500 max-w-xs mb-6 leading-relaxed">
-                Your AI tutor scans this document to give accurate explanations and clickable page citations.
+                {isPresentation
+                  ? 'Your AI tutor scans your PowerPoint slides & speaker notes to give accurate explanations and clickable slide citations.'
+                  : 'Your AI tutor scans this document to give accurate explanations and clickable page citations.'}
               </p>
 
               {/* Quick Prompts (ChatGPT Style Light Cards) */}
@@ -428,7 +479,7 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-left px-1">
                   Suggested Prompts:
                 </p>
-                {QUICK_PROMPTS.map((prompt, idx) => (
+                {(isPresentation ? PPT_QUICK_PROMPTS : DEFAULT_QUICK_PROMPTS).map((prompt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(prompt)}
@@ -487,21 +538,29 @@ export const DocumentChatDrawer: React.FC<DocumentChatDrawerProps> = ({
                           {renderFormattedText(msg.text)}
                         </div>
 
-                        {/* Clickable Page Citations Banner */}
+                        {/* Clickable Page/Slide Citations Banner */}
                         {msg.citedPages && msg.citedPages.length > 0 && onJumpToPage && (
                           <div className="pt-2.5 mt-2 border-t border-gray-100 flex items-center gap-1.5 flex-wrap">
                             <span className="text-[11px] text-gray-500 font-medium">
-                              Referenced Pages:
+                              {isPresentation ? 'Referenced Slides:' : 'Referenced Pages:'}
                             </span>
                             {msg.citedPages.map((pg) => (
                               <button
                                 key={pg}
                                 onClick={() => onJumpToPage(pg)}
-                                className="px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-mono font-semibold text-[11px] transition-all flex items-center gap-1 cursor-pointer"
-                                title={`Jump to Page ${pg}`}
+                                className={`px-2 py-0.5 rounded-md font-mono font-semibold text-[11px] transition-all flex items-center gap-1 cursor-pointer ${
+                                  isPresentation
+                                    ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300'
+                                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                }`}
+                                title={`Jump to ${isPresentation ? 'Slide' : 'Page'} ${pg}`}
                               >
-                                <FileText className="w-3 h-3 text-emerald-600" />
-                                <span>Page {pg}</span>
+                                {isPresentation ? (
+                                  <Presentation className="w-3 h-3 text-amber-600" />
+                                ) : (
+                                  <FileText className="w-3 h-3 text-emerald-600" />
+                                )}
+                                <span>{isPresentation ? `Slide ${pg}` : `Page ${pg}`}</span>
                               </button>
                             ))}
                           </div>

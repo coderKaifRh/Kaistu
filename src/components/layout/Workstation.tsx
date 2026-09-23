@@ -30,6 +30,9 @@ import {
   ChevronDown,
   Pencil,
   Trash2,
+  MoreHorizontal,
+  Headphones,
+  ChevronRight,
 } from 'lucide-react';
 
 interface WorkstationProps {
@@ -64,16 +67,25 @@ export const Workstation: React.FC<WorkstationProps> = ({
   const [showExamQuiz, setShowExamQuiz] = useState(false);
   const [isRatioPopoverOpen, setIsRatioPopoverOpen] = useState(false);
   const [isDocChatOpen, setIsDocChatOpen] = useState(false);
+  const [docChatInitialPrompt, setDocChatInitialPrompt] = useState<string | undefined>(undefined);
+  const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false);
 
   const handleJumpToPage = (pageNum: number) => {
-    const pageEl = document.getElementById(`pdf-page-${pageNum}`);
+    const pageEl =
+      document.getElementById(`pdf-page-${pageNum}`) ||
+      document.getElementById(`pptx-slide-${pageNum}`);
     if (pageEl) {
       pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      pageEl.classList.add('ring-4', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900', 'transition-all');
+      pageEl.classList.add('ring-4', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900', 'transition-all');
       setTimeout(() => {
-        pageEl.classList.remove('ring-4', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900');
+        pageEl.classList.remove('ring-4', 'ring-amber-500', 'ring-offset-2', 'ring-offset-slate-900');
       }, 2500);
     }
+  };
+
+  const handleAskAiTutor = (prompt: string) => {
+    setDocChatInitialPrompt(prompt);
+    setIsDocChatOpen(true);
   };
 
   // Mobile detection and mobile tab switcher ('material' | 'notes')
@@ -109,6 +121,17 @@ export const Workstation: React.FC<WorkstationProps> = ({
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isRatioPopoverOpen]);
+
+  // Escape key to quickly return to dashboard when no sub-modals are open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isDocChatOpen && !showFlashcards && !showExamQuiz && !isRatioPopoverOpen) {
+        onBack();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onBack, isDocChatOpen, showFlashcards, showExamQuiz, isRatioPopoverOpen]);
 
   const handleExportBundle = async () => {
     try {
@@ -254,7 +277,14 @@ export const Workstation: React.FC<WorkstationProps> = ({
       case 'docx':
         return <DocxViewer item={targetItem} onOpenAiAssist={onOpenAiAssist} />;
       case 'pptx':
-        return <PptxViewer item={targetItem} onOpenAiAssist={onOpenAiAssist} />;
+      case 'ppt':
+        return (
+          <PptxViewer
+            item={targetItem}
+            onOpenAiAssist={onOpenAiAssist}
+            onAskAiTutor={handleAskAiTutor}
+          />
+        );
       case 'note':
         return (
           <NoteEditor
@@ -282,6 +312,7 @@ export const Workstation: React.FC<WorkstationProps> = ({
       case 'docx':
         return <FileText className="w-3.5 h-3.5 text-blue-400" />;
       case 'pptx':
+      case 'ppt':
         return <Presentation className="w-3.5 h-3.5 text-amber-400" />;
       default:
         return <Edit3 className="w-3.5 h-3.5 text-indigo-400" />;
@@ -299,33 +330,33 @@ export const Workstation: React.FC<WorkstationProps> = ({
       )}
 
       {/* Top Workstation Navigation Bar */}
-      <header className="flex items-center justify-between px-3 py-2 bg-[#090c13] border-b border-white/[0.07] shrink-0 backdrop-blur-xl z-20 gap-2">
+      <header className="w-full min-w-0 flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-2 bg-[#090c13] border-b border-white/[0.07] shrink-0 backdrop-blur-xl z-20 gap-1.5 sm:gap-2">
         {/* Left Zone: Back & Breadcrumbs */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white border border-white/[0.1] transition shrink-0 font-medium text-xs shadow-sm group"
+            className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white border border-white/[0.1] transition shrink-0 font-medium text-xs shadow-sm group"
             title="Return to Subjects Dashboard"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-indigo-400 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="font-semibold text-[11px] sm:text-xs">Dashboard</span>
+            <span className="font-semibold text-[11px] sm:text-xs hidden sm:inline">Dashboard</span>
           </button>
 
           <div className="h-4 w-[1px] bg-white/[0.08] shrink-0 hidden sm:block" />
 
           {/* Breadcrumbs */}
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1 min-w-0">
             <span className="text-xs font-medium text-slate-400 truncate hidden lg:inline">
               {subject.name}
             </span>
             <span className="text-slate-600 hidden lg:inline text-xs">/</span>
-            <div className="flex items-center gap-1.5 font-semibold text-xs text-white truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
+            <div className="flex items-center gap-1 font-semibold text-xs text-white truncate max-w-[70px] sm:max-w-[180px] md:max-w-[240px]">
               {getItemIcon(item.type)}
               <span className="truncate">{item.title}</span>
             </div>
 
-            {/* Quick Edit and Delete buttons */}
-            <div className="flex items-center gap-0.5 shrink-0">
+            {/* Quick Edit and Delete buttons (Visible on desktop/tablet, inside Action Sheet on mobile) */}
+            <div className="hidden sm:flex items-center gap-0.5 shrink-0">
               {onEditItem && (
                 <button
                   onClick={() => onEditItem(item)}
@@ -358,7 +389,7 @@ export const Workstation: React.FC<WorkstationProps> = ({
           <div className="flex items-center bg-[#0e121a] border border-white/[0.08] p-0.5 rounded-xl shadow-inner shrink-0">
             <button
               onClick={() => setMobileTab('material')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold transition-all ${
                 mobileTab === 'material'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white'
@@ -369,13 +400,13 @@ export const Workstation: React.FC<WorkstationProps> = ({
             </button>
             <button
               onClick={() => setMobileTab('notes')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold transition-all ${
                 mobileTab === 'notes'
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Edit3 className="w-3.5 h-3.5" />
+              <Edit3 className="w-3 h-3" />
               <span>Notes</span>
             </button>
           </div>
@@ -429,7 +460,7 @@ export const Workstation: React.FC<WorkstationProps> = ({
               </button>
 
               {isRatioPopoverOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-[#0e121b]/95 backdrop-blur-xl border border-white/[0.1] rounded-2xl p-4 shadow-2xl z-50 text-slate-200">
+                <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-[#0e121b]/95 backdrop-blur-xl border border-white/[0.1] rounded-2xl p-4 shadow-2xl z-50 text-slate-200">
                   <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/[0.06]">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                       <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" /> Screen Proportions
@@ -492,64 +523,86 @@ export const Workstation: React.FC<WorkstationProps> = ({
             </div>
           )}
 
-          {/* Tools Group */}
-          <div className="flex items-center gap-1 bg-[#0e121a] border border-white/[0.08] p-1 rounded-xl shadow-inner">
-            <AmbientPlayer compact={true} />
+          {/* Ambient Lo-Fi Soundscapes Player (Visible across all devices with viewport-aware portal) */}
+          <AmbientPlayer compact={true} />
 
-            <button
-              onClick={() => setShowFlashcards(true)}
-              className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
-              title="Spaced Repetition Flashcards"
-            >
-              <BrainCircuit className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden lg:inline">Cards</span>
-            </button>
+          {/* Desktop Secondary Tools Group (Cards, Quiz, Export - accessible via More menu on mobile) */}
+          <div className="hidden lg:flex items-center gap-1.5">
+            {/* Tools Group */}
+            <div className="flex items-center gap-1 bg-[#0e121a] border border-white/[0.08] p-1 rounded-xl shadow-inner">
+              <button
+                onClick={() => setShowFlashcards(true)}
+                className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
+                title="Spaced Repetition Flashcards"
+              >
+                <BrainCircuit className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden xl:inline">Cards</span>
+              </button>
 
-            <button
-              onClick={() => setShowExamQuiz(true)}
-              className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
-              title="Practice Exam Quiz"
-            >
-              <Award className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden lg:inline">Quiz</span>
-            </button>
+              <button
+                onClick={() => setShowExamQuiz(true)}
+                className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
+                title="Practice Exam Quiz"
+              >
+                <Award className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden xl:inline">Quiz</span>
+              </button>
 
+              <button
+                onClick={handleExportBundle}
+                className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
+                title="Share Course Bundle (.kaistu)"
+              >
+                <Share2 className="w-3.5 h-3.5 text-blue-400" />
+                <span className="hidden xl:inline">Export</span>
+              </button>
+            </div>
+
+            {/* AI Web Launcher Hub Trigger */}
             <button
-              onClick={handleExportBundle}
-              className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
-              title="Share Course Bundle (.kaistu)"
+              onClick={() =>
+                onOpenAiAssist(
+                  `I am studying "${item.title}" in ${subject.name}. What are the foundational principles, key definitions, and high-yield exam takeaways from this material?`
+                )
+              }
+              className="flex items-center gap-1.5 text-xs bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 px-2.5 py-1.5 rounded-xl font-semibold transition shadow-sm"
+              title="Open AI Web Launchers (Gemini, ChatGPT, Claude)"
             >
-              <Share2 className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden lg:inline">Export</span>
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>AI Web Hub</span>
             </button>
           </div>
 
-          {/* Active AI Document Tutor (RAG) Trigger */}
+          {/* Active AI Document Tutor (RAG) Trigger (Visible across all devices) */}
           <button
             onClick={() => setIsDocChatOpen((prev) => !prev)}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-bold transition shadow-sm ${
+            className={`flex items-center gap-1.5 text-xs px-2 py-1.5 sm:px-2.5 rounded-xl font-bold transition shadow-sm shrink-0 ${
               isDocChatOpen
                 ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_0_20px_rgba(217,70,239,0.5)] ring-1 ring-purple-400/50'
                 : 'bg-gradient-to-r from-purple-950/60 to-pink-950/40 hover:from-purple-900/80 hover:to-pink-900/60 text-purple-200 border border-purple-500/40 hover:border-purple-500/70 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
             }`}
             title="Ask AI questions about this document with page citations"
           >
-            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-            <span>Ask AI</span>
+            <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+            <span className="hidden md:inline whitespace-nowrap">Ask AI</span>
           </button>
 
-          {/* AI Web Launcher Hub Trigger */}
+          {/* Mobile Priority+ Overflow Button */}
           <button
-            onClick={() =>
-              onOpenAiAssist(
-                `I am studying "${item.title}" in ${subject.name}. What are the foundational principles, key definitions, and high-yield exam takeaways from this material?`
-              )
-            }
-            className="flex items-center gap-1.5 text-xs bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 px-2.5 py-1.5 rounded-xl font-semibold transition shadow-sm"
-            title="Open AI Web Launchers (Gemini, ChatGPT, Claude)"
+            onClick={() => setIsMobileActionsOpen(true)}
+            className="lg:hidden flex items-center justify-center p-1.5 sm:p-2 rounded-xl bg-[#0e121a] border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.08] transition shadow-sm shrink-0"
+            title="More study tools & options"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden md:inline">AI Web Hub</span>
+            <MoreHorizontal className="w-4 h-4 text-indigo-400" />
+          </button>
+
+          {/* Close / Exit Workstation Button (Shown on desktop/tablet, hidden on mobile since back button is on the left) */}
+          <button
+            onClick={onBack}
+            className="hidden lg:flex p-1.5 text-slate-400 hover:text-white hover:bg-white/[0.08] rounded-xl transition shrink-0 ml-0.5"
+            title="Close material and return to Dashboard (Esc)"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
       </header>
@@ -663,6 +716,165 @@ export const Workstation: React.FC<WorkstationProps> = ({
         </div>
       )}
 
+      {/* Mobile Action Bottom Sheet (Priority+ Overflow Pattern) */}
+      {isMobileActionsOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
+          {/* Backdrop */}
+          <div
+            onClick={() => setIsMobileActionsOpen(false)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+          />
+
+          {/* Slide-up Container */}
+          <div className="relative bg-[#0c0f17] border-t border-purple-500/30 rounded-t-3xl p-5 shadow-2xl z-10 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+            {/* Grab Handle */}
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/[0.08]">
+              <div className="min-w-0 pr-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  {getItemIcon(item.type)}
+                  <span className="truncate">{item.title}</span>
+                </h3>
+                <p className="text-[11px] text-slate-400">Study Tools & Quick Actions</p>
+              </div>
+              <button
+                onClick={() => setIsMobileActionsOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.08] transition shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Action Items List */}
+            <div className="space-y-2 mb-5">
+              {/* Spaced Repetition Flashcards */}
+              <button
+                onClick={() => {
+                  setIsMobileActionsOpen(false);
+                  setShowFlashcards(true);
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-left transition active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0">
+                    <BrainCircuit className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Spaced Repetition Flashcards</h4>
+                    <p className="text-[10px] text-slate-400">Active recall study deck for this course</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+              </button>
+
+              {/* Practice Exam Quiz */}
+              <button
+                onClick={() => {
+                  setIsMobileActionsOpen(false);
+                  setShowExamQuiz(true);
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-left transition active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Exam Simulator Quiz</h4>
+                    <p className="text-[10px] text-slate-400">Timed multiple choice revision test</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+              </button>
+
+              {/* External AI Web Launchers */}
+              <button
+                onClick={() => {
+                  setIsMobileActionsOpen(false);
+                  onOpenAiAssist(
+                    `I am studying "${item.title}" in ${subject.name}. What are the foundational principles, key definitions, and high-yield exam takeaways from this material?`
+                  );
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-left transition active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-purple-400 shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">AI Web Launcher Hub</h4>
+                    <p className="text-[10px] text-slate-400">Deep study prompts in Gemini, ChatGPT, Claude</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+              </button>
+
+              {/* Course Bundle Export */}
+              <button
+                onClick={() => {
+                  setIsMobileActionsOpen(false);
+                  handleExportBundle();
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-left transition active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-blue-400 shrink-0">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Export Course Bundle</h4>
+                    <p className="text-[10px] text-slate-400">Download .kaistu offline backup package</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+              </button>
+            </div>
+
+            {/* Embedded Ambient Soundscape Section */}
+            <div className="mb-5 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+              <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                <Headphones className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Focus Soundscapes</span>
+              </div>
+              <AmbientPlayer compact={false} />
+            </div>
+
+            {/* Material Management: Edit & Delete */}
+            <div className="pt-3 border-t border-white/[0.08] grid grid-cols-2 gap-2">
+              {onEditItem && (
+                <button
+                  onClick={() => {
+                    setIsMobileActionsOpen(false);
+                    onEditItem(item);
+                  }}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 text-xs font-semibold transition"
+                >
+                  <Pencil className="w-4 h-4 text-indigo-400" />
+                  <span>Edit Material</span>
+                </button>
+              )}
+              {onDeleteItem && (
+                <button
+                  onClick={() => {
+                    setIsMobileActionsOpen(false);
+                    if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
+                      onDeleteItem(item.id);
+                      onBack();
+                    }
+                  }}
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold transition"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-400" />
+                  <span>Delete</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Flashcard Deck Modal */}
       {showFlashcards && (
         <FlashcardDeck
@@ -685,8 +897,12 @@ export const Workstation: React.FC<WorkstationProps> = ({
       <DocumentChatDrawer
         item={item}
         isOpen={isDocChatOpen}
-        onClose={() => setIsDocChatOpen(false)}
+        onClose={() => {
+          setIsDocChatOpen(false);
+          setDocChatInitialPrompt(undefined);
+        }}
         onJumpToPage={handleJumpToPage}
+        initialPrompt={docChatInitialPrompt}
       />
     </div>
   );

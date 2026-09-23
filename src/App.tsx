@@ -129,6 +129,7 @@ export const App: React.FC = () => {
   };
 
   const handleItemSaved = async (savedItem: StudyItem) => {
+    setIsAddItemModalOpen(false);
     if (editingItem) {
       await handleUpdateItem(savedItem);
     } else {
@@ -317,7 +318,7 @@ export const App: React.FC = () => {
         onSave={handleSaveSubject}
       />
 
-      {selectedSubjectId && (
+      {selectedSubjectId && isAddItemModalOpen && (
         <AddItemModal
           isOpen={isAddItemModalOpen}
           onClose={() => {

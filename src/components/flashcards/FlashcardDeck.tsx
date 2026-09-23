@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   X,
   RotateCw,
+  RotateCcw,
   Plus,
   Trash2,
   Shuffle,
@@ -15,7 +16,6 @@ import {
   Key,
   ExternalLink,
   AlertCircle,
-  Zap,
 } from 'lucide-react';
 import { StorageService } from '../../services/storage';
 import { GeminiChatService } from '../../services/geminiChatService';
@@ -167,33 +167,16 @@ export const FlashcardDeck: React.FC<FlashcardDeckProps> = ({
     setIsFlipped(false);
   };
 
-  const generateSampleCards = async () => {
-    const samples: Omit<Flashcard, 'id' | 'subjectId' | 'createdAt'>[] = [
-      {
-        question: 'What is the primary difference between Time Complexity and Space Complexity?',
-        answer: 'Time complexity measures how runtime scales with input size (O(n)), while Space complexity measures additional memory used.',
-      },
-      {
-        question: 'What is the Spaced Repetition effect in cognitive science?',
-        answer: 'The phenomenon where learning is greater when studying is spread out over increasing intervals of time rather than crammed.',
-      },
-      {
-        question: 'What is the Active Recall testing effect?',
-        answer: 'Retrieving information from memory actively produces significantly stronger and longer-lasting retention than passive reading.',
-      },
-    ];
-
-    for (const sample of samples) {
-      const card: Flashcard = {
-        id: `fc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        subjectId,
-        question: sample.question,
-        answer: sample.answer,
-        createdAt: Date.now(),
-      };
-      await StorageService.saveFlashcard(card);
+  const handleClearDeck = async () => {
+    if (cards.length === 0) return;
+    if (confirm('Clear all flashcards in this subject deck? You can auto-generate fresh cards anytime from your document.')) {
+      await StorageService.clearFlashcards(subjectId);
+      setCards([]);
+      setCurrentIndex(0);
+      setIsFlipped(false);
+      setSuccessBanner('Deck cleared. You can now auto-generate fresh cards from your document.');
+      setTimeout(() => setSuccessBanner(null), 3500);
     }
-    await loadCards();
   };
 
   // Trigger AI auto-generation
@@ -303,7 +286,7 @@ export const FlashcardDeck: React.FC<FlashcardDeckProps> = ({
               >
                 <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
                 <span className="hidden sm:inline">Auto-Generate</span>
-                <span className="sm:hidden">Auto</span>
+                <span className="sm:hidden">⚡ AI Auto</span>
               </button>
             )}
 
@@ -395,23 +378,17 @@ export const FlashcardDeck: React.FC<FlashcardDeckProps> = ({
                 {item && (
                   <button
                     onClick={handleStartAiGeneration}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 transition-all hover:scale-[1.02]"
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 transition-all hover:scale-[1.02]"
                   >
-                    <Sparkles className="w-4 h-4 text-purple-200" />
-                    <span>Auto-Generate from "{item.title.slice(0, 20)}..."</span>
+                    <Sparkles className="w-4 h-4 text-purple-200 animate-pulse" />
+                    <span>⚡ Auto-Generate from "{item.title.slice(0, 24)}..."</span>
                   </button>
                 )}
                 <button
                   onClick={() => setIsAdding(true)}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-white/[0.08] transition"
+                  className="w-full sm:w-auto px-5 py-3 bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-white/[0.08] transition"
                 >
                   <Plus className="w-4 h-4 text-indigo-400" /> Custom Card
-                </button>
-                <button
-                  onClick={generateSampleCards}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-white/[0.06] transition"
-                >
-                  <Zap className="w-4 h-4 text-amber-400" /> Sample Deck
                 </button>
               </div>
             </div>
@@ -422,31 +399,58 @@ export const FlashcardDeck: React.FC<FlashcardDeckProps> = ({
                 <span className="font-semibold text-slate-200 font-mono">
                   Card {currentIndex + 1} of {cards.length}
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     onClick={shuffleCards}
-                    className="hover:text-slate-200 flex items-center gap-1 transition-colors"
+                    className="hover:text-slate-200 flex items-center gap-1 transition-colors text-[11px]"
                     title="Shuffle cards"
                   >
                     <Shuffle className="w-3.5 h-3.5" /> Shuffle
                   </button>
                   <button
                     onClick={handleDeleteCurrent}
-                    className="hover:text-rose-400 flex items-center gap-1 transition-colors"
-                    title="Delete card"
+                    className="hover:text-rose-400 flex items-center gap-1 transition-colors text-[11px]"
+                    title="Delete current card"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                  <button
+                    onClick={handleClearDeck}
+                    className="hover:text-rose-400 text-slate-500 flex items-center gap-1 transition-colors text-[11px]"
+                    title="Clear all cards in deck"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Reset
                   </button>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full bg-slate-800/60 h-1.5 rounded-full overflow-hidden mb-5">
+              <div className="w-full bg-slate-800/60 h-1.5 rounded-full overflow-hidden mb-3">
                 <div
                   className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full transition-all duration-300"
                   style={{ width: `${((currentIndex + 1) / cards.length) * 100}%` }}
                 />
               </div>
+
+              {/* Prominent Quick Auto-Generate Banner on Mobile & Desktop */}
+              {item && (
+                <div className="w-full mb-3 p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/25 flex items-center justify-between gap-2 shadow-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                    <span className="text-[11px] text-purple-200 truncate">
+                      Document: <strong className="text-white">{item.title}</strong>
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleStartAiGeneration}
+                    disabled={isGenerating}
+                    className="px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[11px] font-bold rounded-lg shadow-sm shrink-0 flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3 h-3 text-purple-200" />
+                    <span>⚡ Auto-Generate</span>
+                  </button>
+                </div>
+              )}
 
               {/* Interactive Flashcard */}
               <div

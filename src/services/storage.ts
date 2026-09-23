@@ -235,6 +235,12 @@ export const StorageService = {
     await set(FLASHCARDS_KEY, filtered);
   },
 
+  async clearFlashcards(subjectId: string): Promise<void> {
+    const cards = await this.getFlashcards();
+    const remaining = cards.filter((c) => c.subjectId !== subjectId);
+    await set(FLASHCARDS_KEY, remaining);
+  },
+
   async getExamTargets(): Promise<ExamTarget[]> {
     try {
       const targets = await get<ExamTarget[]>(EXAMS_KEY);

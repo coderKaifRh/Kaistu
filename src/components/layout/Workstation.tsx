@@ -880,6 +880,8 @@ export const Workstation: React.FC<WorkstationProps> = ({
         <FlashcardDeck
           subjectId={subject.id}
           subjectName={subject.name}
+          item={item}
+          onJumpToPage={handleJumpToPage}
           onClose={() => setShowFlashcards(false)}
         />
       )}

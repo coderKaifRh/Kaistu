@@ -1,6 +1,6 @@
 import type { ExtractedPage } from './documentTextExtractor';
 import { GeminiKeyService } from './geminiKeyService';
-import type { QuizQuestion } from '../types';
+import type { QuizQuestion, Flashcard } from '../types';
 
 export interface ChatMessage {
   id: string;
@@ -320,5 +320,156 @@ Respond ONLY with a valid JSON array containing ${questionCount} objects. Do NOT
     }
 
     throw lastError || new Error('Failed to generate exam questions with Gemini.');
+  },
+
+  /**
+   * Automatically generate high-yield active recall flashcards from document pages/slides
+   */
+  async generateFlashcardsFromDocument(params: {
+    apiKey: string;
+    subjectId: string;
+    subjectName: string;
+    documentTitle: string;
+    relevantPages: ExtractedPage[];
+    contentType?: string;
+    cardCount?: number;
+  }): Promise<Flashcard[]> {
+    const {
+      apiKey,
+      subjectId,
+      subjectName,
+      documentTitle,
+      relevantPages,
+      contentType,
+      cardCount = 8,
+    } = params;
+
+    const isPresentation = contentType === 'pptx' || contentType === 'ppt';
+    const unitName = isPresentation ? 'slide' : 'page';
+    const unitNameCapital = isPresentation ? 'Slide' : 'Page';
+
+    // Sample from available pages (up to 25 pages / ~35k chars)
+    const contextText =
+      relevantPages.length > 0
+        ? relevantPages
+            .slice(0, 25)
+            .map((p) => `--- [${unitNameCapital} ${p.pageNumber}] ---\n${p.text.slice(0, 2500)}`)
+            .join('\n\n')
+        : `Subject: ${subjectName}\nTopic: ${documentTitle}`;
+
+    const prompt = `You are an elite academic tutor creating an active recall flashcard deck for "${documentTitle}" in the subject "${subjectName}".
+
+Based strictly on the provided ${isPresentation ? 'slide' : 'document'} text below, generate exactly ${cardCount} high-yield active recall flashcards.
+
+CRITICAL RULES:
+1. Focus on core definitions, formulas, key theorems, algorithmic steps, and high-probability exam concepts.
+2. The "question" must be clear, direct, and test genuine recall (e.g. "What is...", "How is X calculated?", "Compare A and B").
+3. The "answer" must be concise, accurate, and easy to memorize (1 to 3 sentences or bullet points).
+4. In "pageCitation", specify the integer number of the ${unitName} where this concept originates (e.g. 1, 2, 3), or null if not applicable.
+
+EXCERPTS FROM "${documentTitle}":
+${contextText}
+
+OUTPUT FORMAT:
+Respond ONLY with a valid JSON array containing ${cardCount} objects. Do NOT include markdown commentary or anything outside the JSON array:
+[
+  {
+    "question": "What is the primary function of...?",
+    "answer": "It serves to...",
+    "pageCitation": 1
+  }
+]`;
+
+    const requestBody = {
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        topP: 0.95,
+        maxOutputTokens: 3000,
+      },
+    };
+
+    const activeModel = GeminiKeyService.getModel();
+    const modelsToTry = [
+      activeModel,
+      ...FALLBACK_MODELS.filter((m) => m !== activeModel),
+    ];
+
+    let lastError: Error | null = null;
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
+            apiKey.trim()
+          )}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (response.ok) {
+          GeminiKeyService.saveModel(model);
+          const data = await response.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+          // Clean markdown code blocks if returned
+          const jsonText = rawText
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/\s*```$/i, '')
+            .trim();
+
+          const parsed = JSON.parse(jsonText);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const timestamp = Date.now();
+            return parsed.map((item: any, idx: number) => {
+              const pageNum = typeof item.pageCitation === 'number' ? item.pageCitation : undefined;
+              return {
+                id: `fc-ai-${timestamp}-${idx + 1}`,
+                subjectId,
+                question: item.question?.trim() || `Core Concept ${idx + 1}`,
+                answer: item.answer?.trim() || 'No answer provided.',
+                difficulty: 'medium' as const,
+                createdAt: timestamp + idx,
+                sourceTitle: documentTitle,
+                sourceCitation: pageNum ? `${unitNameCapital} ${pageNum}` : undefined,
+                sourcePageNumber: pageNum,
+              };
+            });
+          }
+        }
+
+        const errData = await response.json().catch(() => ({}));
+        const errMsg = errData.error?.message || `Gemini Error (${response.status})`;
+
+        if (
+          errMsg.includes('not found') ||
+          errMsg.includes('not supported') ||
+          errMsg.includes('deprecated') ||
+          response.status === 404
+        ) {
+          lastError = new Error(errMsg);
+          continue;
+        }
+
+        if (response.status === 400 && !errMsg.includes('API_KEY_INVALID')) {
+          lastError = new Error(errMsg);
+          continue;
+        }
+
+        throw new Error(errMsg);
+      } catch (err: any) {
+        lastError = err;
+      }
+    }
+
+    throw lastError || new Error('Failed to generate flashcards with Gemini.');
   },
 };

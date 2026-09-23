@@ -71,6 +71,9 @@ export interface Flashcard {
   difficulty?: 'easy' | 'medium' | 'hard';
   lastReviewed?: number;
   createdAt: number;
+  sourceTitle?: string;
+  sourceCitation?: string;
+  sourcePageNumber?: number;
 }
 
 export interface ExamTarget {

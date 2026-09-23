@@ -221,6 +221,14 @@ export const StorageService = {
     await set(FLASHCARDS_KEY, cards);
   },
 
+  async saveFlashcards(newCards: Flashcard[]): Promise<void> {
+    if (!newCards.length) return;
+    const cards = await this.getFlashcards();
+    // Prepend new cards
+    const merged = [...newCards, ...cards];
+    await set(FLASHCARDS_KEY, merged);
+  },
+
   async deleteFlashcard(id: string): Promise<void> {
     const cards = await this.getFlashcards();
     const filtered = cards.filter((c) => c.id !== id);

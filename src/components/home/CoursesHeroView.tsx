@@ -246,10 +246,10 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 md:px-12 py-8 sm:py-12 flex-1 flex flex-col justify-center">
-        {/* Section Heading: "Our Courses_" / "My Subjects_" */}
+        {/* Section Heading: "My Subjects_" */}
         <div className="text-center mb-10 sm:mb-14 relative z-10">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight inline-flex items-center">
-            Our Courses<span className="text-purple-400 animate-pulse">_</span>
+            My Subjects<span className="text-purple-400 animate-pulse">_</span>
           </h1>
           {/* Glowing underline accent bar */}
           <div className="w-20 h-1.5 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-indigo-500 rounded-full mx-auto mt-3 shadow-[0_0_20px_rgba(217,70,239,0.6)]" />
@@ -268,7 +268,7 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
                 {/* Banner top bar */}
                 <div className="flex items-center justify-between text-[10px] font-black tracking-wider text-pink-300 uppercase">
                   <span className="bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 rounded-md">
-                    {featuredSubject ? featuredSubject.code || 'COURSE' : 'START NOW'}
+                    {featuredSubject ? featuredSubject.code || 'SUBJECT' : 'START NOW'}
                   </span>
                   <span className="text-purple-300 font-bold">KaiStu Studio</span>
                 </div>
@@ -326,7 +326,7 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Course Headline & Description */}
+          {/* Right Column: Subject Headline & Description */}
           <div className="lg:col-span-6 space-y-6 text-left">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.15] text-transparent bg-gradient-to-r from-purple-400 via-fuchsia-300 to-indigo-300 bg-clip-text">
               {featuredSubject ? featuredSubject.name : 'Organize Every Subject & Lecture with KaiStu'}
@@ -382,7 +382,7 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
               </button>
             </div>
 
-            {/* Course Selector Tabs (if user has multiple subjects) */}
+            {/* Subject Selector Tabs (if user has multiple subjects) */}
             {subjects.length > 1 && (
               <div className="pt-4 border-t border-white/[0.08]">
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -409,14 +409,14 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
         </div>
 
         {/* ---------------------------------------------------- */}
-        {/* All Subjects / Courses Catalog Grid */}
+        {/* All Study Subjects Catalog Grid */}
         {/* ---------------------------------------------------- */}
         <div id="all-subjects" className="pt-10 border-t border-purple-900/30">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
                 <Layers className="w-5 h-5 text-purple-400" />
-                <span>All Subjects & Courses</span>
+                <span>All Study Subjects</span>
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
                   {subjects.length}
                 </span>
@@ -462,7 +462,7 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
                         </div>
                         <div>
                           <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-purple-400 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-md">
-                            {sub.code || 'COURSE'}
+                            {sub.code || 'SUBJECT'}
                           </span>
                         </div>
                       </div>
@@ -476,7 +476,7 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
                               onEditSubject(sub);
                             }}
                             className="p-1.5 text-slate-400 hover:text-purple-300 hover:bg-white/[0.08] rounded-lg transition"
-                            title="Edit course"
+                            title="Edit subject"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
@@ -489,7 +489,7 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
                             }
                           }}
                           className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
-                          title="Delete course"
+                          title="Delete subject"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -541,7 +541,7 @@ export const CoursesHeroView: React.FC<CoursesHeroViewProps> = ({
                 + Create Custom Subject
               </h3>
               <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
-                Add a new course or subject with custom code, icon & description.
+                Add a new study subject with custom code, icon & description.
               </p>
             </div>
           </div>

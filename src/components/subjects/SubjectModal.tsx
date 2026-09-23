@@ -101,7 +101,7 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({
 
           <div>
             <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-              Course Code / Tag (Optional)
+              Subject Code / Tag (Optional)
             </label>
             <input
               type="text"

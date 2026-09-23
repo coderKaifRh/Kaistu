@@ -134,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Navigation: Our Courses Hero */}
+      {/* Navigation: Study Hub Overview */}
       {onBackToCourses && (
         <div className="px-3 pt-2 pb-1">
           <button
@@ -147,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center gap-2">
               <LayoutGrid className="w-4 h-4 text-purple-400" />
-              <span>Our Courses</span>
+              <span>Study Hub</span>
             </div>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
               Overview

@@ -551,7 +551,7 @@ export const Workstation: React.FC<WorkstationProps> = ({
               <button
                 onClick={handleExportBundle}
                 className="flex items-center gap-1 text-xs text-slate-300 hover:text-white px-2 py-1 rounded-lg font-medium transition hover:bg-white/[0.06]"
-                title="Share Course Bundle (.kaistu)"
+                title="Share Study Bundle (.kaistu)"
               >
                 <Share2 className="w-3.5 h-3.5 text-blue-400" />
                 <span className="hidden xl:inline">Export</span>
@@ -763,7 +763,7 @@ export const Workstation: React.FC<WorkstationProps> = ({
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-white">Spaced Repetition Flashcards</h4>
-                    <p className="text-[10px] text-slate-400">Active recall study deck for this course</p>
+                    <p className="text-[10px] text-slate-400">Active recall study deck for this subject</p>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
@@ -811,7 +811,7 @@ export const Workstation: React.FC<WorkstationProps> = ({
                 <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
               </button>
 
-              {/* Course Bundle Export */}
+              {/* Study Bundle Export */}
               <button
                 onClick={() => {
                   setIsMobileActionsOpen(false);
@@ -824,7 +824,7 @@ export const Workstation: React.FC<WorkstationProps> = ({
                     <Share2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">Export Course Bundle</h4>
+                    <h4 className="text-xs font-bold text-white">Export Study Bundle</h4>
                     <p className="text-[10px] text-slate-400">Download .kaistu offline backup package</p>
                   </div>
                 </div>

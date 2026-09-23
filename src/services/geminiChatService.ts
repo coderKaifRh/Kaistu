@@ -209,7 +209,7 @@ ${question}`;
             .join('\n\n')
         : `Subject: ${subjectName}\nTopic: ${documentTitle}`;
 
-    const prompt = `You are an expert university professor creating an exam simulator for the material "${documentTitle}" in the course "${subjectName}".
+    const prompt = `You are an expert university professor creating an exam simulator for the material "${documentTitle}" in the subject "${subjectName}".
 
 Based strictly on the provided ${isPresentation ? 'slide' : 'document'} text below, generate exactly ${questionCount} high-yield, challenging, university-level multiple-choice exam questions.
 

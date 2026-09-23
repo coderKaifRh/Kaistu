@@ -61,14 +61,14 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
   // Current folder object
   const currentFolder = currentFolderId ? folders.find((f) => f.id === currentFolderId) : null;
 
-  // Build breadcrumb path with Our Courses at the root
+  // Build breadcrumb path with Study Hub at the root
   const breadcrumbs = React.useMemo(() => {
     interface Crumb {
       id: string | null;
       name: string;
     }
     const crumbs: Crumb[] = [
-      { id: '__home__', name: 'Our Courses' },
+      { id: '__home__', name: 'Study Hub' },
       { id: null, name: subject.name },
     ];
     if (!currentFolderId) return crumbs;
@@ -84,7 +84,7 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
     return [...crumbs, ...path];
   }, [currentFolderId, folders, subject.name]);
 
-  // Navigate up one folder level or back to all courses
+  // Navigate up one folder level or back to study hub
   const handleGoBack = () => {
     if (currentFolderId) {
       const cur = folders.find((f) => f.id === currentFolderId);
@@ -214,7 +214,7 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
           <button
             onClick={handleGoBack}
             className="p-2.5 rounded-xl bg-[#0e121a] border border-white/[0.12] text-slate-300 hover:text-white hover:bg-white/[0.08] transition shadow-sm flex items-center justify-center shrink-0"
-            title={currentFolderId ? 'Back to parent folder' : 'Back to All Courses'}
+            title={currentFolderId ? 'Back to parent folder' : 'Back to Study Hub'}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -223,7 +223,7 @@ export const SubjectDetailView: React.FC<SubjectDetailViewProps> = ({
             {/* Breadcrumbs trail */}
             <div className="flex items-center gap-1.5 flex-wrap text-xs text-slate-400 mb-1">
               <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-purple-400 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-md">
-                {subject.code || 'COURSE'}
+                {subject.code || 'SUBJECT'}
               </span>
               <span className="text-slate-600">•</span>
               {breadcrumbs.map((crumb, idx) => {

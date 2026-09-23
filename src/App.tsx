@@ -296,7 +296,7 @@ export const App: React.FC = () => {
                     onClick={() => setActiveView('home')}
                     className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold shadow-lg transition"
                   >
-                    View Our Courses
+                    Go to Study Hub
                   </button>
                   <button
                     onClick={() => setIsSubjectModalOpen(true)}

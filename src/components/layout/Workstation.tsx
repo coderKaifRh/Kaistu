@@ -889,6 +889,8 @@ export const Workstation: React.FC<WorkstationProps> = ({
         <ExamSimulator
           subjectId={subject.id}
           subjectName={subject.name}
+          item={item}
+          onJumpToPage={handleJumpToPage}
           onClose={() => setShowExamQuiz(false)}
         />
       )}

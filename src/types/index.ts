@@ -88,6 +88,7 @@ export interface QuizQuestion {
   options: string[];
   correctIndex: number;
   explanation: string;
+  pageCitation?: number;
 }
 
 export type AmbientSoundType = 'rain' | 'waves' | 'cafe' | 'whitenoise';
